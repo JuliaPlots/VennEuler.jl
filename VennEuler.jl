@@ -63,22 +63,24 @@ type EulerObject
 	evalfn
 end
 
+dupeelements(qq) = [qq[ceil(i)] for i in (1:(2*length(qq)))/2]
+
 function makeeulerobject(labels::Vector{ASCIIString}, sizes::Vector, target::DisjointSet)
+	@assert length(labels) == length(sizes)
 	# create the bounds vectors
 	nparams = 2 * length(labels)
-	# this puts the centers between 0 and 1, assuming we have 2-parameter circles with 
-	# fixed areas
-	# TODO: force the boundaries to be smaller, so circles stay within 0..1
-	lb = zeros(nparams)
-	ub = ones(nparams)
-	# create the state vector
-	es::EulerState = rand(nparams) .* (ub .- lb) .+ lb
 	# normalize the sizes array so that the sum is = 1/2 
 	sizes = sizes / (2 * sum(sizes))
-
+	# this forces the centers to not overlap with the boundary
+	lb = dupeelements(sizes)
+	ub = dupeelements(1 .- sizes)
+	@assert all(lb .< ub)
+	# create the initial state vector
+	es::EulerState = rand(nparams) .* (ub .- lb) .+ lb
+	
 	# return: state vector, state object (with bounds, closure, etc)
 	eo = EulerObject(nparams, labels, lb, ub, sizes, target, identity)
-	eo.evalvn = x -> evaleulerstate(eo, x) 
+	eo.evalfn = x -> evaleulerstate(eo, x) 
 	(es, eo)
 end
 
