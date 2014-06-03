@@ -1,8 +1,15 @@
+module VennEuler
 
+using Base
 using Iterators
 
-randdata = randbool(20, 3); # 3 cols
-setlabels = ["A", "B", "C"];
+export
+	DisjointSet,
+	EulerState,
+	EulerObject,
+	makeeulerobject,
+	evaleulerstate
+
 
 # a DisjointSet is a structure that stores counts of the number of observations that
 # fall into each element of the power set of the given sets. Note that a PowerSet
@@ -129,34 +136,5 @@ function showbitmap(bm)
 	end
 end
 
-# type EulerState
-# 	labels::Vector{ASCIIString}
-# 	elems::Vector{EulerStateElem}
-# end
 
-# abstract EulerStateElem
-
-# type EulerStateCircle <: EulerStateElem
-# 	center
-# 	radius
-# end
-
-# function makeonestate()
-# # method to generate an inital EulerState from a set of label names and areas
-# function makestate(labels::Vector, areas::Vector)
-# 	# one element per label
-# 	lb = zeros(Float64, length(labels))
-# 	ub = ones(Float64, length(labels))
-# 	elems = [EulerStateCircle(areas[i], )]
-# end
-
-# method to update an EulerState with new params
-
-# method to generate a 2-D bitmap from an EulerStateElem
-
-# method to generate all bitmaps from an EulerState
-
-# method to compute overlaps from the bitmaps from an EulerState, yielding a DisjointSet
-
-
-
+end # module
