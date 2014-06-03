@@ -1,5 +1,5 @@
 
-# throwaway file to explore things...
+using Iterators
 
 randdata = randbool(20, 3); # 3 cols
 setlabels = ["A", "B", "C"];
@@ -43,21 +43,112 @@ end
 
 # convert a DisjointSet to a PowerSet -- needed?
 
-type EulerState
-	labels::Vector{ASCIIString}
-	elems::Vector{EulerStateElem}
+
+# an EulerState is just a Vector{Float64}
+typealias EulerState Vector{Float64}
+
+# to create one, a function takes specifications and returns several things:
+# an initial EulerState
+# a closure that can be used to generate scores for an EulerState
+# lower bound vector, upper bound vector
+# areas?
+
+type EulerObject
+	nparams
+	labels
+	lb
+	ub
+	sizes
+	target
+	evalfn
 end
 
-abstract EulerStateElem
+function makeeulerobject(labels::Vector{ASCIIString}, sizes::Vector, target::DisjointSet)
+	# create the bounds vectors
+	nparams = 2 * length(labels)
+	# this puts the centers between 0 and 1, assuming we have 2-parameter circles with 
+	# fixed areas
+	# TODO: force the boundaries to be smaller, so circles stay within 0..1
+	lb = zeros(nparams)
+	ub = ones(nparams)
+	# create the state vector
+	es::EulerState = rand(nparams) .* (ub .- lb) .+ lb
+	# normalize the sizes array so that the sum is = 1/2 
+	sizes = sizes / (2 * sum(sizes))
 
-type EulerStateCircle <: EulerStateElem
-	area
-	params
-	lowerbounds
-	upperbounds
+	# return: state vector, state object (with bounds, closure, etc)
+	eo = EulerObject(nparams, labels, lb, ub, sizes, target, identity)
+	eo.evalvn = x -> evaleulerstate(eo, x) 
+	(es, eo)
 end
 
-# method to generate an EulerState from a set of label names
+function evaleulerstate(obj::EulerObject, state::EulerState)
+	# given this state vector and the object, do the following:
+	# generate a 2-D bitmap from each object
+	# foreach element of the DisjointSet, calculate the size of the overlap of the bitmaps
+	# compare the overlaps with the target, returning the error metric
+	bitmaps = [makebitmapcircle(x=state[i], y=state[i+1], r=obj.sizes[i], size=200) 
+				for i in 1:length(labels)]
+
+end
+
+# on a field of [0,1) x [0,1)
+function makebitmapcircle(x, y, r, size)
+	bm = falses(size,size)
+	pixel = 1/size
+
+	# walk rows from -r to +r, doing the trig to find the number of bits
+	# left and right of x to set to true
+	for yoffset in -r:pixel:r
+		# figure out the range for this row
+		alpha = r * sqrt(1 - (yoffset/r)^2) # a big of trig
+		#@show alpha
+		# convert into bitmap coordinates
+		yoffset_bm = iround((y + yoffset) * size + 1)
+		#@show yoffset_bm
+		if 1 <= yoffset_bm <= size 	# if Y is inside the box
+			# convert X into bitmap coordinates, bounding
+			xrange_bm = iround(max(1,(x - alpha) * size + 1)) : iround(min(size,(x + alpha) * size + 1))
+			#@show xrange_bm
+			if (length(xrange_bm) > 0)
+				bm[yoffset_bm, xrange_bm] = true
+			end
+		end
+	end
+	bm
+end
+
+function showbitmap(bm)
+	for r in 1:size(bm,1)
+		for c in 1:size(bm,2)
+			print(bm[r,c] ? '￭' : '·')
+		end
+		println("")
+	end
+end
+
+# type EulerState
+# 	labels::Vector{ASCIIString}
+# 	elems::Vector{EulerStateElem}
+# end
+
+# abstract EulerStateElem
+
+# type EulerStateCircle <: EulerStateElem
+# 	center
+# 	radius
+# end
+
+# function makeonestate()
+# # method to generate an inital EulerState from a set of label names and areas
+# function makestate(labels::Vector, areas::Vector)
+# 	# one element per label
+# 	lb = zeros(Float64, length(labels))
+# 	ub = ones(Float64, length(labels))
+# 	elems = [EulerStateCircle(areas[i], )]
+# end
+
+# method to update an EulerState with new params
 
 # method to generate a 2-D bitmap from an EulerStateElem
 
