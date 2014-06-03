@@ -19,10 +19,8 @@ type DisjointSet
 	labels
 	counts
 
-	function DisjointSet(dat::AbstractArray, labs::AbstractArray)
+	function DisjointSet(dat::AbstractMatrix, labs::AbstractVector)
 		# dat must be 2-D and the num of cols must be equal to the length of the labels
-		@assert length(size(dat)) == 2
-		@assert length(size(labs)) == 1
 		@assert size(dat,2) == size(labs,1)
 		nrow = size(dat,1); ncol = size(dat,2)
 
@@ -96,9 +94,31 @@ function evaleulerstate(obj::EulerObject, state::EulerState)
 	# generate a 2-D bitmap from each object
 	# foreach element of the DisjointSet, calculate the size of the overlap of the bitmaps
 	# compare the overlaps with the target, returning the error metric
-	bitmaps = [makebitmapcircle(x=state[i], y=state[i+1], r=obj.sizes[i], size=200) 
-				for i in 1:length(labels)]
+	px = 20
+	bitmaps = [makebitmapcircle(state[2i-1], state[2i], obj.sizes[i], px) 
+				for i in 1:length(obj.labels)]
 
+	# iterate through the powerset index
+	# ignore 000
+	overlaps = zeros(2^length(obj.labels)-1)
+	for psi = 1:length(overlaps)
+		bpsi = bits(psi)
+		compare_str = bpsi[(endof(bpsi) - length(obj.labels) + 1):end]
+		@show compare_str
+		# if we have 101, then take the overlap of bitmaps[1], !bitmaps[2], and bitmaps[3]
+		overlap = trues(px,px) 
+		for i in 1:length(compare_str)
+			overlap = overlap & (compare_str[i] == '1' ? bitmaps[i] : !bitmaps[i])
+		end
+		showbitmap(overlap)
+		overlaps[psi] = sum(overlap)
+	end
+	@show overlaps
+	# TODO: use better error metric
+	# compare overlaps with obj.target
+	overlaps_norm = overlaps ./ sum(overlaps)
+	target_norm = obj.target.counts[2:end] ./ sum(obj.target.counts[2:end])
+	sum((overlaps_norm .- target_norm).^2)
 end
 
 # on a field of [0,1) x [0,1)

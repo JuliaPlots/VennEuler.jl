@@ -25,6 +25,13 @@ VennEuler.showbitmap(bmc1)
 @test sum(bmc2) == 1
 
 # evaluating Euler states
+simplelabels = ["A", "B"]
+simpledata = bool([1 0; 1 1; 0 1])
+
+es, eo = makeeulerobject(simplelabels, vec(sum(simpledata,1)), DisjointSet(simpledata, simplelabels))
+@show VennEuler.evaleulerstate(eo, [.33, .5, .66, .5])
+@show VennEuler.evaleulerstate(eo, [.38, .5, .62, .5])
+
 
 # optimization
 
