@@ -3,6 +3,7 @@ module VennEuler
 using Base
 using Iterators
 using NLopt
+using Cairo
 
 export
 	DisjointSet,
@@ -10,7 +11,8 @@ export
 	EulerObject,
 	makeeulerobject,
 	evaleulerstate,
-	optimize
+	optimize,
+	render
 
 
 # a DisjointSet is a structure that stores counts of the number of observations that
@@ -178,5 +180,34 @@ function showbitmap(bm)
 	end
 end
 
+function render(fn, obj::EulerObject, state::EulerState; size=500.0)
+	c = CairoSVGSurface(fn, size, size);
+	cr = CairoContext(c);
+	set_line_width(cr, size / 200.0);
+	select_font_face(cr, "Sans", Cairo.FONT_SLANT_NORMAL,
+	                     Cairo.FONT_WEIGHT_NORMAL);
+	set_font_size(cr, size / 15.0);
+	function calcxy(i)
+		x = state[(i-1)*2+1]*size
+		y = state[(i-1)*2+2]*size
+		x,y
+	end
+	for i = 1:3
+		set_source_rgba(cr, i==1?1:0, i==2?1:0, i==3?1:0, .5)
+		(x, y) = calcxy(i)
+		arc(cr, x, y, obj.sizes[i]*size, 0, 2*pi)
+		fill(cr)
+	end
+	for i = 1:3 # put edges and labels on top
+		set_source_rgba(cr, i==1?1:0, i==2?1:0, i==3?1:0, 1)
+		(x, y) = calcxy(i)
+		arc(cr, x, y, obj.sizes[i]*size, 0, 2*pi)
+		stroke(cr);
+		extents = text_extents(cr, obj.labels[i]);	
+		move_to(cr, x-(extents[3]/2 + extents[1]), y-(extents[4]/2 + extents[2]));
+		show_text(cr, obj.labels[i]);
+	end
+	finish(c)
+end
 
 end # module
