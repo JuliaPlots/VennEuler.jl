@@ -74,7 +74,7 @@ end
 
 dupeelements(qq) = [qq[ceil(i)] for i in (1:(2*length(qq)))/2]
 
-function makeeulerobject(labels::Vector{ASCIIString}, sizes::Vector, target::DisjointSet)
+function makeeulerobject(labels::Vector{String}, sizes::Vector, target::DisjointSet)
 	@assert length(labels) == length(sizes)
 	# create the bounds vectors
 	nparams = 2 * length(labels)
@@ -98,7 +98,7 @@ function makeeulerobject(labels::Vector{ASCIIString}, sizes::Vector, target::Dis
 	(es, eo)
 end
 
-function optimize(obj::EulerObject, state::EulerState; xtol=1/200, ftol=1/1000, maxtime=5, init_step=.1)
+function optimize(obj::EulerObject, state::EulerState; xtol=1/200, ftol=1.0e-7, maxtime=30, init_step=.1)
 	opt = Opt(:GN_DIRECT, length(state))
 	lower_bounds!(opt, obj.lb)
 	upper_bounds!(opt, obj.ub)
@@ -186,21 +186,26 @@ function render(fn, obj::EulerObject, state::EulerState; size=500.0)
 	set_line_width(cr, size / 200.0);
 	select_font_face(cr, "Sans", Cairo.FONT_SLANT_NORMAL,
 	                     Cairo.FONT_WEIGHT_NORMAL);
-	set_font_size(cr, size / 15.0);
+	set_font_size(cr, size / 20.0);
 	function calcxy(i)
 		x = state[(i-1)*2+1]*size
 		y = state[(i-1)*2+2]*size
 		x,y
 	end
-	for i = 1:3
-		set_source_rgba(cr, i==1?1:0, i==2?1:0, i==3?1:0, .5)
+	reds =   [1, 0, 0, .6, 0, .6, .2, .7]
+	greens = [0, 1, 0, 0, .6, .6, .2, .7]
+	blues =  [0, 0, 1, .6, .6, 0, .2, .7]
+	@assert length(obj.labels) <= length(reds)
+	for i = 1:length(obj.labels)
+		set_source_rgba(cr, reds[i], greens[i], blues[i], .3)
 		(x, y) = calcxy(i)
 		arc(cr, x, y, obj.sizes[i]*size, 0, 2*pi)
 		fill(cr)
 	end
-	for i = 1:3 # put edges and labels on top
-		set_source_rgba(cr, i==1?1:0, i==2?1:0, i==3?1:0, 1)
+	for i = 1:length(obj.labels) # put edges and labels on top
+		set_source_rgba(cr, reds[i], greens[i], blues[i], 1)
 		(x, y) = calcxy(i)
+		move_to(cr, x+obj.sizes[i]*size, y)
 		arc(cr, x, y, obj.sizes[i]*size, 0, 2*pi)
 		stroke(cr);
 		extents = text_extents(cr, obj.labels[i]);	
