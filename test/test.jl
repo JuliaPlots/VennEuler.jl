@@ -42,3 +42,18 @@ println("got $minf at $minx (returned $ret)")
 println("got $minf at $minx (returned $ret)")
 @test ret == :FTOL_REACHED
 
+# output
+using Cairo
+c = CairoSVGSurface("test1.svg", 500.0, 500.0);
+cr = CairoContext(c);
+set_line_width(cr, 3);
+for i = 1:3
+	set_source_rgba(cr, i==1?1:0, i==2?1:0, i==3?1:0, .5)
+	arc(cr, minx[(i-1)*2+1]*500, minx[(i-1)*2+2]*500, eo.sizes[i]*500, 0, 2*pi)
+	fill(cr)
+	set_source_rgba(cr, i==1?1:0, i==2?1:0, i==3?1:0, 1)
+	stroke(cr);
+end
+finish(c)
+
+
