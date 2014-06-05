@@ -2,14 +2,15 @@ module VennEuler
 
 using Base
 using Iterators
-#using NLopt
+using NLopt
 
 export
 	DisjointSet,
 	EulerState,
 	EulerObject,
 	makeeulerobject,
-	evaleulerstate
+	evaleulerstate,
+	optimize
 
 
 # a DisjointSet is a structure that stores counts of the number of observations that
@@ -89,10 +90,22 @@ function makeeulerobject(labels::Vector{ASCIIString}, sizes::Vector, target::Dis
 	eo.evalfn = (x,g) -> begin
 		@assert length(g) == 0
 		cost = VennEuler.evaleulerstate(eo, x) 
-		println(x, " (", cost, ")")
+		#println(x, " (", cost, ")")
 		cost
 	end
 	(es, eo)
+end
+
+function optimize(obj::EulerObject, state::EulerState; xtol=1/200, ftol=1/1000, maxtime=5, init_step=.1)
+	opt = Opt(:GN_DIRECT, length(state))
+	lower_bounds!(opt, obj.lb)
+	upper_bounds!(opt, obj.ub)
+	xtol_abs!(opt, xtol)
+	ftol_abs!(opt, ftol)
+	min_objective!(opt, obj.evalfn)
+	maxtime!(opt, maxtime)
+	initial_step!(opt, init_step)
+	NLopt.optimize(opt, state)
 end
 
 function evaleulerstate(obj::EulerObject, state::EulerState; verbose::Int64=0, px::Int64=200)

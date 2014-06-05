@@ -28,19 +28,17 @@ VennEuler.showbitmap(bmc1)
 simplelabels = ["A", "B"]
 simpledata = bool([1 0; 1 1; 0 1])
 
-es, eo = makeeulerobject(simplelabels, vec(sum(simpledata,1)), DisjointSet(simpledata, simplelabels))
-@show VennEuler.evaleulerstate(eo, [.33, .5, .66, .5])
-@show eo.evalfn([.33, .5, .66, .5], [])
-@time VennEuler.evaleulerstate(eo, [.38, .5, .62, .5])
+es2, eo2 = makeeulerobject(simplelabels, vec(sum(simpledata,1)), DisjointSet(simpledata, simplelabels))
+@show VennEuler.evaleulerstate(eo2, [.33, .5, .66, .5])
+@show eo2.evalfn([.33, .5, .66, .5], [])
+@time VennEuler.evaleulerstate(eo2, [.38, .5, .62, .5])
 
 # optimization
-using NLopt
-opt = Opt(:GN_DIRECT, length(es))
-lower_bounds!(opt, eo.lb)
-upper_bounds!(opt, eo.ub)
-xtol_abs!(opt, 1/200)
-ftol_abs!(opt, 1/1000)
-min_objective!(opt, eo.evalfn)
-maxtime!(opt, 5)
-initial_step!(opt, .1)
-(minf,minx,ret) = optimize(opt, [.33, .5, .66, .5])
+(minf,minx,ret) = optimize(eo2, es2)
+println("got $minf at $minx (returned $ret)")
+@test ret == :FTOL_REACHED
+
+(minf,minx,ret) = optimize(eo, es, ftol=1/10000)
+println("got $minf at $minx (returned $ret)")
+@test ret == :FTOL_REACHED
+
