@@ -30,9 +30,17 @@ simpledata = bool([1 0; 1 1; 0 1])
 
 es, eo = makeeulerobject(simplelabels, vec(sum(simpledata,1)), DisjointSet(simpledata, simplelabels))
 @show VennEuler.evaleulerstate(eo, [.33, .5, .66, .5])
-@show VennEuler.evaleulerstate(eo, [.38, .5, .62, .5])
-
+@show eo.evalfn([.33, .5, .66, .5], [])
+@time VennEuler.evaleulerstate(eo, [.38, .5, .62, .5])
 
 # optimization
-
-
+using NLopt
+opt = Opt(:GN_DIRECT, length(es))
+lower_bounds!(opt, eo.lb)
+upper_bounds!(opt, eo.ub)
+xtol_abs!(opt, 1/200)
+ftol_abs!(opt, 1/1000)
+min_objective!(opt, eo.evalfn)
+maxtime!(opt, 5)
+initial_step!(opt, .1)
+(minf,minx,ret) = optimize(opt, [.33, .5, .66, .5])

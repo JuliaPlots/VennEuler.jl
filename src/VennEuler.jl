@@ -2,6 +2,7 @@ module VennEuler
 
 using Base
 using Iterators
+#using NLopt
 
 export
 	DisjointSet,
@@ -85,16 +86,20 @@ function makeeulerobject(labels::Vector{ASCIIString}, sizes::Vector, target::Dis
 	
 	# return: state vector, state object (with bounds, closure, etc)
 	eo = EulerObject(nparams, labels, lb, ub, sizes, target, identity)
-	eo.evalfn = x -> evaleulerstate(eo, x) 
+	eo.evalfn = (x,g) -> begin
+		@assert length(g) == 0
+		cost = VennEuler.evaleulerstate(eo, x) 
+		println(x, " (", cost, ")")
+		cost
+	end
 	(es, eo)
 end
 
-function evaleulerstate(obj::EulerObject, state::EulerState)
+function evaleulerstate(obj::EulerObject, state::EulerState; verbose::Int64=0, px::Int64=200)
 	# given this state vector and the object, do the following:
 	# generate a 2-D bitmap from each object
 	# foreach element of the DisjointSet, calculate the size of the overlap of the bitmaps
 	# compare the overlaps with the target, returning the error metric
-	px = 20
 	bitmaps = [makebitmapcircle(state[2i-1], state[2i], obj.sizes[i], px) 
 				for i in 1:length(obj.labels)]
 
@@ -104,16 +109,20 @@ function evaleulerstate(obj::EulerObject, state::EulerState)
 	for psi = 1:length(overlaps)
 		bpsi = bits(psi)
 		compare_str = bpsi[(endof(bpsi) - length(obj.labels) + 1):end]
-		@show compare_str
+		if (verbose > 0)
+			@show compare_str
+		end
 		# if we have 101, then take the overlap of bitmaps[1], !bitmaps[2], and bitmaps[3]
 		overlap = trues(px,px) 
 		for i in 1:length(compare_str)
 			overlap = overlap & (compare_str[i] == '1' ? bitmaps[i] : !bitmaps[i])
 		end
-		showbitmap(overlap)
+		if (verbose > 0) showbitmap(overlap) end
 		overlaps[psi] = sum(overlap)
 	end
-	@show overlaps
+	if (verbose > 0)
+		@show overlaps
+	end
 	# TODO: use better error metric
 	# compare overlaps with obj.target
 	overlaps_norm = overlaps ./ sum(overlaps)
