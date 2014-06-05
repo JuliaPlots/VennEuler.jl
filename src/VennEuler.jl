@@ -186,15 +186,15 @@ function render(fn, obj::EulerObject, state::EulerState; size=500.0)
 	set_line_width(cr, size / 200.0);
 	select_font_face(cr, "Sans", Cairo.FONT_SLANT_NORMAL,
 	                     Cairo.FONT_WEIGHT_NORMAL);
-	set_font_size(cr, size / 20.0);
+	set_font_size(cr, size / 25.0);
 	function calcxy(i)
 		x = state[(i-1)*2+1]*size
 		y = state[(i-1)*2+2]*size
 		x,y
 	end
-	reds =   [1, 0, 0, .6, 0, .6, .2, .7]
-	greens = [0, 1, 0, 0, .6, .6, .2, .7]
-	blues =  [0, 0, 1, .6, .6, 0, .2, .7]
+	reds =   [1,  0, 0, .7, 0, .7, .2, .7]
+	greens = [0, .8, 0, 0, .7, .7, .2, .7]
+	blues =  [0,  0, 1, .7, .7, 0, .2, .7]
 	@assert length(obj.labels) <= length(reds)
 	for i = 1:length(obj.labels)
 		set_source_rgba(cr, reds[i], greens[i], blues[i], .3)
