@@ -18,7 +18,7 @@ export
 # a DisjointSet is a structure that stores counts of the number of observations that
 # fall into each element of the power set of the given sets. Note that a PowerSet
 # would be similar, but (for example) the slot for A would contain A&B, whereas for
-# a DisjointSet, the slot for A is for observations of A and not-B, not-C, etc.
+# a DisjointSet, the slot for A is for observations of (A and not-B and not-C), etc.
 type DisjointSet
 	labels
 	counts
@@ -74,12 +74,12 @@ end
 
 dupeelements(qq) = [qq[ceil(i)] for i in (1:(2*length(qq)))/2]
 
-function makeeulerobject(labels::Vector{String}, sizes::Vector, target::DisjointSet)
+function makeeulerobject(labels::Vector, sizes::Vector, target::DisjointSet; sizesum = 1)
 	@assert length(labels) == length(sizes)
 	# create the bounds vectors
 	nparams = 2 * length(labels)
 	# normalize the sizes array so that the sum is = 1/2 
-	sizes = sizes / (2 * sum(sizes))
+	sizes = sizesum * sizes / sum(sizes)
 	# this forces the centers to not overlap with the boundary
 	lb = dupeelements(sizes)
 	ub = dupeelements(1 .- sizes)
@@ -98,8 +98,9 @@ function makeeulerobject(labels::Vector{String}, sizes::Vector, target::Disjoint
 	(es, eo)
 end
 
-function optimize(obj::EulerObject, state::EulerState; xtol=1/200, ftol=1.0e-7, maxtime=30, init_step=.1)
-	opt = Opt(:GN_DIRECT, length(state))
+function optimize(obj::EulerObject, state::EulerState; xtol=1/200, ftol=1.0e-7, maxtime=30, init_step=.1,
+	alg = :GN_CRS2_LM, pop = 0)
+	opt = Opt(alg, length(state))
 	lower_bounds!(opt, obj.lb)
 	upper_bounds!(opt, obj.ub)
 	xtol_abs!(opt, xtol)
@@ -107,6 +108,7 @@ function optimize(obj::EulerObject, state::EulerState; xtol=1/200, ftol=1.0e-7, 
 	min_objective!(opt, obj.evalfn)
 	maxtime!(opt, maxtime)
 	initial_step!(opt, init_step)
+	population!(opt, pop)
 	NLopt.optimize(opt, state)
 end
 
