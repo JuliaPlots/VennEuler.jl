@@ -13,8 +13,11 @@ ds1 = DisjointSet(randdata, setlabels)
 @test ds1.counts == [0,0,5,3,5,1,4,2]
 
 # make an Euler object
-es, eo = makeeulerobject(setlabels, vec(sum(randdata,1)), ds1, sizesum=.5)
-@test_approx_eq_eps(eo.lb, [0.1875, 0.1875, 0.21875, 0.21875, 0.09375, 0.09375], .001)
+es, eo = makeeulerobject(setlabels, vec(sum(randdata,1)), ds1, sizesum=.5) # old way
+@test_approx_eq_eps(eo.lb, [0.17939, 0.17939, 0.193763, 0.193763, 0.126848, 0.126848], .001)
+@test all(eo.lb .<= es .<= eo.ub)
+es, eo = makeeulerobject(setlabels, randdata, sizesum=.5) # test shortcut
+@test_approx_eq_eps(eo.lb, [0.17939, 0.17939, 0.193763, 0.193763, 0.126848, 0.126848], .001)
 @test all(eo.lb .<= es .<= eo.ub)
 
 # tests for bitmap operations
@@ -28,8 +31,7 @@ VennEuler.showbitmap(bmc1)
 simplelabels = ["A", "B"]
 simpledata = bool([1 0; 1 1; 0 1])
 
-es2, eo2 = makeeulerobject(simplelabels, vec(sum(simpledata,1)), DisjointSet(simpledata, simplelabels),
-	sizesum=.5)
+es2, eo2 = makeeulerobject(simplelabels, simpledata, sizesum=.5)
 @show VennEuler.evaleulerstate(eo2, [.33, .5, .66, .5])
 @show eo2.evalfn([.33, .5, .66, .5], [])
 @time VennEuler.evaleulerstate(eo2, [.38, .5, .62, .5])

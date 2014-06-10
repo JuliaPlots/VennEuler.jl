@@ -74,21 +74,25 @@ end
 
 dupeelements(qq) = [qq[ceil(i)] for i in (1:(2*length(qq)))/2]
 
+makeeulerobject(labels, counts; args...) = 
+	makeeulerobject(labels, vec(sum(counts,1)), DisjointSet(counts, labels); args...)
+
 function makeeulerobject(labels::Vector, sizes::Vector, target::DisjointSet; sizesum = 1)
 	@assert length(labels) == length(sizes)
 	# create the bounds vectors
 	nparams = 2 * length(labels)
-	# normalize the sizes array so that the sum is = 1/2 
-	sizes = sizesum * sizes / sum(sizes)
+	# convert areas to radii, then normalize
+	radii = sqrt(sizes / pi)
+	radii = sizesum * radii / sum(radii)
 	# this forces the centers to not overlap with the boundary
-	lb = dupeelements(sizes)
-	ub = dupeelements(1 .- sizes)
+	lb = dupeelements(radii)
+	ub = dupeelements(1 .- radii)
 	@assert all(lb .< ub)
 	# create the initial state vector
 	es::EulerState = rand(nparams) .* (ub .- lb) .+ lb
 	
 	# return: state vector, state object (with bounds, closure, etc)
-	eo = EulerObject(nparams, labels, lb, ub, sizes, target, identity)
+	eo = EulerObject(nparams, labels, lb, ub, radii, target, identity)
 	eo.evalfn = (x,g) -> begin
 		@assert length(g) == 0
 		cost = VennEuler.evaleulerstate(eo, x) 
