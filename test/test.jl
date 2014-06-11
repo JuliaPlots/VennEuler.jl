@@ -15,7 +15,12 @@ randdata = randbool(20, 3) # 3 cols
 setlabels = ["A", "B", "C"]
 # specification is either a single object (if all sets are treated the same)
 # or a list of objects (to treat them differently)
-#spec = EulerSpec(shape=:circle, clamp=[NaN, NaN])
+spec = EulerSpec(:circle, [NaN, NaN])
+specdefault = EulerSpec()
+@test isequal(spec.shape, specdefault.shape)
+@test isequal(spec.clamp, specdefault.clamp)
+@test_throws ErrorException EulerSpec(:tesseract)
+@test_throws ErrorException EulerSpec(:circle, [1, 1, 1])
 
 # make sure DisjointSets can be constructed
 ds1 = DisjointSet(randdata, setlabels)

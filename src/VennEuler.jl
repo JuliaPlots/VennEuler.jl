@@ -9,6 +9,7 @@ export
 	DisjointSet,
 	EulerState,
 	EulerObject,
+	EulerSpec,
 	makeeulerobject,
 	evaleulerstate,
 	optimize,
@@ -57,6 +58,30 @@ type EulerObject
 	sizes
 	target
 	evalfn
+end
+
+type EulerSpec
+	shape
+	clamp
+
+	function EulerSpec(shape, clamp)
+		# this constructor enforces invariants
+		if (shape == :circle)
+			@assert length(clamp) == 2
+		else 
+			error("Unknown EulerSpec shape: ", string(shape))
+		end
+		new(shape, clamp)
+	end
+end
+
+EulerSpec() = EulerSpec(:circle)
+function EulerSpec(shape)
+	if (shape == :circle)
+		EulerSpec(shape, [NaN, NaN])
+	else
+		error("Unknown EulerSpec shape: ", string(shape))
+	end
 end
 
 dupeelements(qq) = [qq[ceil(i)] for i in (1:(2*length(qq)))/2]
