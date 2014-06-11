@@ -46,21 +46,8 @@ type DisjointSet
 	end
 end
 
-# pretty print a DisjointSet
-
-# regress two DisjointSets
-
-# convert a DisjointSet to a PowerSet -- needed?
-
-
 # an EulerState is just a Vector{Float64}
 typealias EulerState Vector{Float64}
-
-# to create one, a function takes specifications and returns several things:
-# an initial EulerState
-# a closure that can be used to generate scores for an EulerState
-# lower bound vector, upper bound vector
-# areas?
 
 type EulerObject
 	nparams
@@ -74,10 +61,10 @@ end
 
 dupeelements(qq) = [qq[ceil(i)] for i in (1:(2*length(qq)))/2]
 
-makeeulerobject(labels, counts; args...) = 
-	makeeulerobject(labels, vec(sum(counts,1)), DisjointSet(counts, labels); args...)
+function makeeulerobject(labels, counts; sizesum = 1)
+	target = DisjointSet(counts, labels)
+	sizes = vec(sum(counts,1))
 
-function makeeulerobject(labels::Vector, sizes::Vector, target::DisjointSet; sizesum = 1)
 	@assert length(labels) == length(sizes)
 	# create the bounds vectors
 	nparams = 2 * length(labels)
