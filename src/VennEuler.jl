@@ -166,10 +166,12 @@ end
 
 function eval_euler_state(obj::EulerObject, state::EulerState; verbose::Int64=0, px::Int64=200)
 	# given this state vector and the object, do the following:
-	# generate a 2-D bitmap from each object
+	# generate a 2-D bitmap from each set
 	# foreach element of the DisjointSet, calculate the size of the overlap of the bitmaps
 	# compare the overlaps with the target, returning the error metric
-	bitmaps = [makebitmapcircle(state[2i-1], state[2i], obj.sizes[i], px) 
+
+	# draws different shapes depending on spec
+	bitmaps = [make_bitmap(state[2i-1], state[2i], obj.sizes[i], obj.specs[i], px) 
 				for i in 1:length(obj.labels)]
 
 	# iterate through the powerset index
@@ -200,9 +202,17 @@ function eval_euler_state(obj::EulerObject, state::EulerState; verbose::Int64=0,
 end
 
 # on a field of [0,1) x [0,1)
-function makebitmapcircle(x, y, r, size)
-	bm = falses(size,size)
-	pixel = 1/size
+function make_bitmap(x, y, size, spec, px)
+	if (spec.shape == :circle)
+		make_bitmap_circle(x, y, size, px)
+	else
+		error("unknown shape: ", spec.shape)
+	end
+end
+
+function make_bitmap_circle(x, y, r, px)
+	bm = falses(px,px)
+	pixel = 1/px
 
 	# walk rows from -r to +r, doing the trig to find the number of bits
 	# left and right of x to set to true
@@ -211,11 +221,11 @@ function makebitmapcircle(x, y, r, size)
 		alpha = r * sqrt(1 - (yoffset/r)^2) # a big of trig
 		#@show alpha
 		# convert into bitmap coordinates
-		yoffset_bm = iround((y + yoffset) * size + 1)
+		yoffset_bm = iround((y + yoffset) * px + 1)
 		#@show yoffset_bm
-		if 1 <= yoffset_bm <= size 	# if Y is inside the box
+		if 1 <= yoffset_bm <= px 	# if Y is inside the box
 			# convert X into bitmap coordinates, bounding
-			xrange_bm = iround(max(1,(x - alpha) * size + 1)) : iround(min(size,(x + alpha) * size + 1))
+			xrange_bm = iround(max(1,(x - alpha) * px + 1)) : iround(min(px,(x + alpha) * px + 1))
 			#@show xrange_bm
 			if (length(xrange_bm) > 0)
 				bm[yoffset_bm, xrange_bm] = true

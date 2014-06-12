@@ -45,8 +45,8 @@ es = random_state(eo)
 @test all(eo.lb .<= es .<= eo.ub)
 
 # tests for bitmap operations
-bmc1 = VennEuler.makebitmapcircle(.5, .5, .2, 20)
-bmc2 = VennEuler.makebitmapcircle(.5, .5, .001, 20)
+bmc1 = VennEuler.make_bitmap_circle(.5, .5, .2, 20)
+bmc2 = VennEuler.make_bitmap_circle(.5, .5, .001, 20)
 @test sum(bmc1) == 57
 VennEuler.showbitmap(bmc1)
 @test sum(bmc2) == 1
