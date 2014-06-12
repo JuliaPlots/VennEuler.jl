@@ -67,7 +67,7 @@ type EulerSpec
 
 	function EulerSpec(shape, clamp, statepos)
 		# this constructor enforces invariants
-		if (shape == :circle)
+		if (in(shape, [:circle, :square, :triangle]))
 			@assert length(clamp) == 2
 			@assert length(statepos) == 2
 		else 
@@ -79,7 +79,7 @@ end
 
 EulerSpec() = EulerSpec(:circle)
 function EulerSpec(shape)
-	if (shape == :circle)
+	if in(shape, [:circle, :square, :triangle])
 		EulerSpec(shape, [NaN, NaN], [0, 0])
 	else
 		error("Unknown EulerSpec shape: ", string(shape))
@@ -103,8 +103,14 @@ function compute_shape_sizes(specs, count_totals, sizesum)
 	@assert length(specs) == length(count_totals)
 	shape_sizes = similar(count_totals, Float64)
 	for i in 1:length(specs)
-		if (specs[i].shape == :circle)
-			shape_sizes[i] = sqrt(count_totals[i]) / pi
+		if specs[i].shape == :circle
+			# area = pi r^2; r = sqrt(area/pi)
+			shape_sizes[i] = sqrt(count_totals[i] / pi) 
+		elseif specs[i].shape == :square
+			# area = side^2; halfside = sqrt(area) / 2
+			shape_sizes[i] = sqrt(count_totals[i]) / 2
+		elseif specs[i].shape == :triangle
+			error("not yet implemented")
 		else
 			error("unknown shape: ", specs[i].shape)
 		end
@@ -203,11 +209,24 @@ end
 
 # on a field of [0,1) x [0,1)
 function make_bitmap(x, y, size, spec, px)
-	if (spec.shape == :circle)
+	if spec.shape == :circle
 		make_bitmap_circle(x, y, size, px)
+	elseif spec.shape == :square
+		make_bitmap_square(x, y, size, px)
 	else
 		error("unknown shape: ", spec.shape)
 	end
+end
+
+function make_bitmap_square(x, y, halfsz, px)
+	bm = falses(px, px) # DRY...
+	pixel = 1/px
+
+	# compute column and row ranges, then fast assignment
+	xrange_bm = iround(max(1, (x - halfsz) * px + 1)) : iround(min(px, (x + halfsz) * px + 1))
+	yrange_bm = iround(max(1, (y - halfsz) * px + 1)) : iround(min(px, (y + halfsz) * px + 1))
+	bm[yrange_bm, xrange_bm] = true # matrices are indexed Y,X...
+	bm
 end
 
 function make_bitmap_circle(x, y, r, px)
@@ -260,18 +279,33 @@ function render(fn, obj::EulerObject, state::EulerState; size=500.0)
 	greens = [0, .8, 0, 0, .7, .7, .2, .7]
 	blues =  [0,  0, 1, .7, .7, 0, .2, .7]
 	@assert length(obj.labels) <= length(reds)
+
+	# foreach object, set the color, calc the center, then draw the appropriate object
 	for i = 1:length(obj.labels)
 		set_source_rgba(cr, reds[i], greens[i], blues[i], .3)
 		(x, y) = calcxy(i)
-		arc(cr, x, y, obj.sizes[i]*size, 0, 2*pi)
+		if obj.specs[i].shape == :circle
+			arc(cr, x, y, obj.sizes[i]*size, 0, 2*pi)
+		elseif obj.specs[i].shape == :square
+			halfside = obj.sizes[i] * size
+			rectangle(cr, x - halfside, y - halfside, 2halfside, 2halfside)
+		end
 		fill(cr)
 	end
 	for i = 1:length(obj.labels) # put edges and labels on top
 		set_source_rgba(cr, reds[i], greens[i], blues[i], 1)
+
+		# TODO: it should be possible to extract the below into a fn...
 		(x, y) = calcxy(i)
-		move_to(cr, x+obj.sizes[i]*size, y)
-		arc(cr, x, y, obj.sizes[i]*size, 0, 2*pi)
+		if obj.specs[i].shape == :circle
+			move_to(cr, x+obj.sizes[i]*size, y)
+			arc(cr, x, y, obj.sizes[i]*size, 0, 2*pi)
+		elseif obj.specs[i].shape == :square
+			halfside = obj.sizes[i] * size
+			rectangle(cr, x - halfside, y - halfside, 2halfside, 2halfside)
+		end
 		stroke(cr);
+
 		extents = text_extents(cr, obj.labels[i]);	
 		move_to(cr, x-(extents[3]/2 + extents[1]), y-(extents[4]/2 + extents[2]));
 		show_text(cr, obj.labels[i]);
