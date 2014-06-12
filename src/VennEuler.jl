@@ -11,7 +11,8 @@ export
 	EulerSpec,
 	make_euler_object,
 	optimize,
-	render
+	render,
+	random_state
 
 
 # a DisjointSet is a structure that stores counts of the number of observations that
@@ -98,39 +99,56 @@ function update_statepos!(specs::Vector{EulerSpec})
 	end
 end
 
+function compute_shape_sizes(specs, count_totals, sizesum)
+	@assert length(specs) == length(count_totals)
+	shape_sizes = similar(count_totals, Float64)
+	for i in 1:length(specs)
+		if (specs[i].shape == :circle)
+			shape_sizes[i] = sqrt(count_totals[i]) / pi
+		else
+			error("unknown shape: ", specs[i].shape)
+		end
+	end
+	sizesum * shape_sizes / sum(shape_sizes)
+end
+
 function make_euler_object(labels, counts, specs::Vector{EulerSpec}; sizesum = 1)
 	target = DisjointSet(counts, labels)
-	sizes = vec(sum(counts,1))
+	count_totals = vec(sum(counts,1))
 
-	@assert length(labels) == length(sizes)
+	@assert length(labels) == length(count_totals)
 
 	# use the spec to figure out how to translate to and from a state
 	nparams = sum([length(spec.clamp) for spec in specs])
-	# TODO: turn the below into 
 	
+	update_statepos!(specs) # this lets us look the up parameters in the state vector
 	
-	# convert areas to radii, then normalize
-	radii = sqrt(sizes / pi)
-	radii = sizesum * radii / sum(radii)
+	# we have non-normalized areas, but need to compute a per-shape size (e.g., radius) 
+	# that indicates the maximum distance from the object center to the farthest edge
+	shape_sizes = compute_shape_sizes(specs, count_totals, sizesum)
+	# then, use those sizes to generate bounds
+
 	# this forces the centers to not overlap with the boundary
-	lb = dupeelements(radii)
-	ub = dupeelements(1 .- radii)
+	lb = dupeelements(shape_sizes)
+	ub = dupeelements(1 .- shape_sizes)
 	@assert all(lb .< ub)
-	# create the initial state vector
-	es::EulerState = rand(nparams) .* (ub .- lb) .+ lb
-	
+
 	# return: state vector, state object (with bounds, closure, etc)
-	eo = EulerObject(nparams, labels, lb, ub, radii, target, specs, identity)
+	eo = EulerObject(nparams, labels, lb, ub, shape_sizes, target, specs, identity)
 	eo.evalfn = (x,g) -> begin
 		@assert length(g) == 0
 		cost = VennEuler.eval_euler_state(eo, x) 
 		#println(x, " (", cost, ")")
 		cost
 	end
-	(es, eo)
+	eo
 end
 make_euler_object(labels, counts, spec::EulerSpec; q...) = 
 	make_euler_object(labels, counts, [deepcopy(x)::EulerSpec for x in repeated(spec, length(labels))]; q...)
+
+function random_state(eo::EulerObject)
+	rand(eo.nparams) .* (eo.ub .- eo.lb) .+ eo.lb
+end
 
 function optimize(obj::EulerObject, state::EulerState; xtol=1/200, ftol=1.0e-7, maxtime=30, init_step=.1,
 	alg = :GN_CRS2_LM, pop = 0)
