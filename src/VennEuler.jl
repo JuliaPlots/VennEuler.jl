@@ -6,13 +6,13 @@ using NLopt
 using Cairo
 
 export
-	DisjointSet,
 	EulerState,
 	EulerObject,
-	makeeulerobject,
-	evaleulerstate,
+	EulerSpec,
+	make_euler_object,
 	optimize,
-	render
+	render,
+	random_state
 
 
 # a DisjointSet is a structure that stores counts of the number of observations that
@@ -46,21 +46,8 @@ type DisjointSet
 	end
 end
 
-# pretty print a DisjointSet
-
-# regress two DisjointSets
-
-# convert a DisjointSet to a PowerSet -- needed?
-
-
 # an EulerState is just a Vector{Float64}
 typealias EulerState Vector{Float64}
-
-# to create one, a function takes specifications and returns several things:
-# an initial EulerState
-# a closure that can be used to generate scores for an EulerState
-# lower bound vector, upper bound vector
-# areas?
 
 type EulerObject
 	nparams
@@ -69,37 +56,98 @@ type EulerObject
 	ub
 	sizes
 	target
+	specs
 	evalfn
+end
+
+type EulerSpec
+	shape
+	clamp
+	statepos
+
+	function EulerSpec(shape, clamp, statepos)
+		# this constructor enforces invariants
+		if (shape == :circle)
+			@assert length(clamp) == 2
+			@assert length(statepos) == 2
+		else 
+			error("Unknown EulerSpec shape: ", string(shape))
+		end
+		new(shape, clamp, statepos)
+	end
+end
+
+EulerSpec() = EulerSpec(:circle)
+function EulerSpec(shape)
+	if (shape == :circle)
+		EulerSpec(shape, [NaN, NaN], [0, 0])
+	else
+		error("Unknown EulerSpec shape: ", string(shape))
+	end
 end
 
 dupeelements(qq) = [qq[ceil(i)] for i in (1:(2*length(qq)))/2]
 
-makeeulerobject(labels, counts; args...) = 
-	makeeulerobject(labels, vec(sum(counts,1)), DisjointSet(counts, labels); args...)
+function update_statepos!(specs::Vector{EulerSpec})
+	i = 1
+	for spec in specs
+		for j = 1:length(spec.statepos)
+			spec.statepos[j] = i
+			i += 1
+		end
+		#@show spec
+	end
+end
 
-function makeeulerobject(labels::Vector, sizes::Vector, target::DisjointSet; sizesum = 1)
-	@assert length(labels) == length(sizes)
-	# create the bounds vectors
-	nparams = 2 * length(labels)
-	# convert areas to radii, then normalize
-	radii = sqrt(sizes / pi)
-	radii = sizesum * radii / sum(radii)
-	# this forces the centers to not overlap with the boundary
-	lb = dupeelements(radii)
-	ub = dupeelements(1 .- radii)
-	@assert all(lb .< ub)
-	# create the initial state vector
-	es::EulerState = rand(nparams) .* (ub .- lb) .+ lb
+function compute_shape_sizes(specs, count_totals, sizesum)
+	@assert length(specs) == length(count_totals)
+	shape_sizes = similar(count_totals, Float64)
+	for i in 1:length(specs)
+		if (specs[i].shape == :circle)
+			shape_sizes[i] = sqrt(count_totals[i]) / pi
+		else
+			error("unknown shape: ", specs[i].shape)
+		end
+	end
+	sizesum * shape_sizes / sum(shape_sizes)
+end
+
+function make_euler_object(labels, counts, specs::Vector{EulerSpec}; sizesum = 1)
+	target = DisjointSet(counts, labels)
+	count_totals = vec(sum(counts,1))
+
+	@assert length(labels) == length(count_totals)
+
+	# use the spec to figure out how to translate to and from a state
+	nparams = sum([length(spec.clamp) for spec in specs])
 	
+	update_statepos!(specs) # this lets us look the up parameters in the state vector
+	
+	# we have non-normalized areas, but need to compute a per-shape size (e.g., radius) 
+	# that indicates the maximum distance from the object center to the farthest edge
+	shape_sizes = compute_shape_sizes(specs, count_totals, sizesum)
+	# then, use those sizes to generate bounds
+
+	# this forces the centers to not overlap with the boundary
+	lb = dupeelements(shape_sizes)
+	ub = dupeelements(1 .- shape_sizes)
+	@assert all(lb .< ub)
+
 	# return: state vector, state object (with bounds, closure, etc)
-	eo = EulerObject(nparams, labels, lb, ub, radii, target, identity)
+	eo = EulerObject(nparams, labels, lb, ub, shape_sizes, target, specs, identity)
 	eo.evalfn = (x,g) -> begin
 		@assert length(g) == 0
-		cost = VennEuler.evaleulerstate(eo, x) 
+		cost = VennEuler.eval_euler_state(eo, x) 
 		#println(x, " (", cost, ")")
 		cost
 	end
-	(es, eo)
+	eo
+end
+make_euler_object(labels, counts, spec::EulerSpec; q...) = 
+	make_euler_object(labels, counts, [deepcopy(x)::EulerSpec for x in repeated(spec, length(labels))]; q...)
+
+function random_state(eo::EulerObject)
+	rand(eo.nparams) .* (eo.ub .- eo.lb) .+ eo.lb
 end
 
 function optimize(obj::EulerObject, state::EulerState; xtol=1/200, ftol=1.0e-7, maxtime=30, init_step=.1,
@@ -116,12 +164,14 @@ function optimize(obj::EulerObject, state::EulerState; xtol=1/200, ftol=1.0e-7, 
 	NLopt.optimize(opt, state)
 end
 
-function evaleulerstate(obj::EulerObject, state::EulerState; verbose::Int64=0, px::Int64=200)
+function eval_euler_state(obj::EulerObject, state::EulerState; verbose::Int64=0, px::Int64=200)
 	# given this state vector and the object, do the following:
-	# generate a 2-D bitmap from each object
+	# generate a 2-D bitmap from each set
 	# foreach element of the DisjointSet, calculate the size of the overlap of the bitmaps
 	# compare the overlaps with the target, returning the error metric
-	bitmaps = [makebitmapcircle(state[2i-1], state[2i], obj.sizes[i], px) 
+
+	# draws different shapes depending on spec
+	bitmaps = [make_bitmap(state[2i-1], state[2i], obj.sizes[i], obj.specs[i], px) 
 				for i in 1:length(obj.labels)]
 
 	# iterate through the powerset index
@@ -152,9 +202,17 @@ function evaleulerstate(obj::EulerObject, state::EulerState; verbose::Int64=0, p
 end
 
 # on a field of [0,1) x [0,1)
-function makebitmapcircle(x, y, r, size)
-	bm = falses(size,size)
-	pixel = 1/size
+function make_bitmap(x, y, size, spec, px)
+	if (spec.shape == :circle)
+		make_bitmap_circle(x, y, size, px)
+	else
+		error("unknown shape: ", spec.shape)
+	end
+end
+
+function make_bitmap_circle(x, y, r, px)
+	bm = falses(px,px)
+	pixel = 1/px
 
 	# walk rows from -r to +r, doing the trig to find the number of bits
 	# left and right of x to set to true
@@ -163,11 +221,11 @@ function makebitmapcircle(x, y, r, size)
 		alpha = r * sqrt(1 - (yoffset/r)^2) # a big of trig
 		#@show alpha
 		# convert into bitmap coordinates
-		yoffset_bm = iround((y + yoffset) * size + 1)
+		yoffset_bm = iround((y + yoffset) * px + 1)
 		#@show yoffset_bm
-		if 1 <= yoffset_bm <= size 	# if Y is inside the box
+		if 1 <= yoffset_bm <= px 	# if Y is inside the box
 			# convert X into bitmap coordinates, bounding
-			xrange_bm = iround(max(1,(x - alpha) * size + 1)) : iround(min(size,(x + alpha) * size + 1))
+			xrange_bm = iround(max(1,(x - alpha) * px + 1)) : iround(min(px,(x + alpha) * px + 1))
 			#@show xrange_bm
 			if (length(xrange_bm) > 0)
 				bm[yoffset_bm, xrange_bm] = true
