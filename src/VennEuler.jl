@@ -6,12 +6,10 @@ using NLopt
 using Cairo
 
 export
-	DisjointSet,
 	EulerState,
 	EulerObject,
 	EulerSpec,
-	makeeulerobject,
-	evaleulerstate,
+	make_euler_object,
 	optimize,
 	render
 
@@ -57,28 +55,31 @@ type EulerObject
 	ub
 	sizes
 	target
+	specs
 	evalfn
 end
 
 type EulerSpec
 	shape
 	clamp
+	statepos
 
-	function EulerSpec(shape, clamp)
+	function EulerSpec(shape, clamp, statepos)
 		# this constructor enforces invariants
 		if (shape == :circle)
 			@assert length(clamp) == 2
+			@assert length(statepos) == 2
 		else 
 			error("Unknown EulerSpec shape: ", string(shape))
 		end
-		new(shape, clamp)
+		new(shape, clamp, statepos)
 	end
 end
 
 EulerSpec() = EulerSpec(:circle)
 function EulerSpec(shape)
 	if (shape == :circle)
-		EulerSpec(shape, [NaN, NaN])
+		EulerSpec(shape, [NaN, NaN], [0, 0])
 	else
 		error("Unknown EulerSpec shape: ", string(shape))
 	end
@@ -86,13 +87,28 @@ end
 
 dupeelements(qq) = [qq[ceil(i)] for i in (1:(2*length(qq)))/2]
 
-function makeeulerobject(labels, counts; sizesum = 1)
+function update_statepos!(specs::Vector{EulerSpec})
+	i = 1
+	for spec in specs
+		for j = 1:length(spec.statepos)
+			spec.statepos[j] = i
+			i += 1
+		end
+		#@show spec
+	end
+end
+
+function make_euler_object(labels, counts, specs::Vector{EulerSpec}; sizesum = 1)
 	target = DisjointSet(counts, labels)
 	sizes = vec(sum(counts,1))
 
 	@assert length(labels) == length(sizes)
-	# create the bounds vectors
-	nparams = 2 * length(labels)
+
+	# use the spec to figure out how to translate to and from a state
+	nparams = sum([length(spec.clamp) for spec in specs])
+	# TODO: turn the below into 
+	
+	
 	# convert areas to radii, then normalize
 	radii = sqrt(sizes / pi)
 	radii = sizesum * radii / sum(radii)
@@ -104,15 +120,17 @@ function makeeulerobject(labels, counts; sizesum = 1)
 	es::EulerState = rand(nparams) .* (ub .- lb) .+ lb
 	
 	# return: state vector, state object (with bounds, closure, etc)
-	eo = EulerObject(nparams, labels, lb, ub, radii, target, identity)
+	eo = EulerObject(nparams, labels, lb, ub, radii, target, specs, identity)
 	eo.evalfn = (x,g) -> begin
 		@assert length(g) == 0
-		cost = VennEuler.evaleulerstate(eo, x) 
+		cost = VennEuler.eval_euler_state(eo, x) 
 		#println(x, " (", cost, ")")
 		cost
 	end
 	(es, eo)
 end
+make_euler_object(labels, counts, spec::EulerSpec; q...) = 
+	make_euler_object(labels, counts, [deepcopy(x)::EulerSpec for x in repeated(spec, length(labels))]; q...)
 
 function optimize(obj::EulerObject, state::EulerState; xtol=1/200, ftol=1.0e-7, maxtime=30, init_step=.1,
 	alg = :GN_CRS2_LM, pop = 0)
@@ -128,7 +146,7 @@ function optimize(obj::EulerObject, state::EulerState; xtol=1/200, ftol=1.0e-7, 
 	NLopt.optimize(opt, state)
 end
 
-function evaleulerstate(obj::EulerObject, state::EulerState; verbose::Int64=0, px::Int64=200)
+function eval_euler_state(obj::EulerObject, state::EulerState; verbose::Int64=0, px::Int64=200)
 	# given this state vector and the object, do the following:
 	# generate a 2-D bitmap from each object
 	# foreach element of the DisjointSet, calculate the size of the overlap of the bitmaps
