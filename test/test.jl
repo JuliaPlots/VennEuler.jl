@@ -54,12 +54,12 @@ VennEuler.showbitmap(bmc1)
 @test sum(bmc2) == 1
 
 spec_sq = EulerSpec(:square, [NaN, NaN], [0, 0])
-bmsq1 = VennEuler.make_bitmap(.5, .5, .2, spec_sq, 20)
+bmsq1 = VennEuler.make_bitmap([.5, .5], .2, spec_sq, 20)
 @test sum(bmsq1) == 81
 VennEuler.showbitmap(bmsq1)
 
 spec_tr = EulerSpec(:triangle, [NaN, NaN], [0, 0])
-bmtr1 = VennEuler.make_bitmap(.5, .5, .15, spec_tr, 20)
+bmtr1 = VennEuler.make_bitmap([.5, .5], .15, spec_tr, 20)
 #@show bmtr1 #sum(bmsq1) == 81
 VennEuler.showbitmap(bmtr1)
 

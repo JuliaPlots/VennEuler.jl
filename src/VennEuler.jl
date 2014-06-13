@@ -179,7 +179,7 @@ function eval_euler_state(obj::EulerObject, state::EulerState; verbose::Int64=0,
 	# compare the overlaps with the target, returning the error metric
 
 	# draws different shapes depending on spec
-	bitmaps = [make_bitmap(state[2i-1], state[2i], obj.sizes[i], obj.specs[i], px) 
+	bitmaps = [make_bitmap(state[obj.specs[i].statepos], obj.sizes[i], obj.specs[i], px) 
 				for i in 1:length(obj.labels)]
 
 	# iterate through the powerset index
@@ -210,13 +210,13 @@ function eval_euler_state(obj::EulerObject, state::EulerState; verbose::Int64=0,
 end
 
 # on a field of [0,1) x [0,1)
-function make_bitmap(x, y, size, spec, px)
+function make_bitmap(params, size, spec, px)
 	if spec.shape == :circle
-		make_bitmap_circle(x, y, size, px)
+		make_bitmap_circle(params[1], params[2], size, px)
 	elseif spec.shape == :square
-		make_bitmap_square(x, y, size, px)
+		make_bitmap_square(params[1], params[2], size, px)
 	elseif spec.shape == :triangle
-		make_bitmap_triangle(x, y, size, px)
+		make_bitmap_triangle(params[1], params[2], size, px)
 	else
 		error("unknown shape: ", spec.shape)
 	end
