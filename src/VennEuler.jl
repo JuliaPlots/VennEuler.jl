@@ -110,7 +110,9 @@ function compute_shape_sizes(specs, count_totals, sizesum)
 			# area = side^2; halfside = sqrt(area) / 2
 			shape_sizes[i] = sqrt(count_totals[i]) / 2
 		elseif specs[i].shape == :triangle
-			error("not yet implemented")
+			# area = side^2 * sqrt(3)/4; dist to vertex = side/2 / cos(pi/6)
+			side = sqrt(4 * count_totals[i] / sqrt(3))
+			shape_sizes[i] = side / (2 * cos(pi/6))
 		else
 			error("unknown shape: ", specs[i].shape)
 		end
@@ -213,9 +215,36 @@ function make_bitmap(x, y, size, spec, px)
 		make_bitmap_circle(x, y, size, px)
 	elseif spec.shape == :square
 		make_bitmap_square(x, y, size, px)
+	elseif spec.shape == :triangle
+		make_bitmap_triangle(x, y, size, px)
 	else
 		error("unknown shape: ", spec.shape)
 	end
+end
+
+function make_bitmap_triangle(x, y, r, px) # r = radius of circle around the triangle
+	bm = falses(px,px)
+	pixel = 1/px
+
+	# this shape isn't symmetric -- need to be careful that 0,0 is UPPER-LEFT corner, like Cairo
+
+	# TODO: might be able to share some of this with the Cairo rendering
+
+	# walk columns from left to right, doing the trig to find the number of bits
+	# to set to true
+	h = cos(pi/6) * r # half the side of the triangle
+	j = sin(pi/6) * r # distance from center to side 
+	for xoffset in -h:pixel:h
+		# figure out the range for this column
+		p = h - abs(xoffset) # dist from the corner to this column, mirrored
+		yoffset = (j - (r+j) * p/h, j) # congruent triangles give ratio of vertical offset from j
+
+		# covert into bitmap coords
+		xoffset_bm =  iround((x + xoffset) * px + 1)
+		yrange_bm = iround(max(1, (y + yoffset[1]) * px + 1)) : iround(min(px, (y + yoffset[2]) * px + 1))
+		bm[yrange_bm, xoffset_bm] = true
+	end
+	bm
 end
 
 function make_bitmap_square(x, y, halfsz, px)
@@ -263,16 +292,16 @@ function showbitmap(bm)
 	end
 end
 
-function render(fn, obj::EulerObject, state::EulerState; size=500.0)
-	c = CairoSVGSurface(fn, size, size);
+function render(fn, obj::EulerObject, state::EulerState; px=500.0)
+	c = CairoSVGSurface(fn, px, px);
 	cr = CairoContext(c);
-	set_line_width(cr, size / 200.0);
+	set_line_width(cr, px / 200.0);
 	select_font_face(cr, "Sans", Cairo.FONT_SLANT_NORMAL,
 	                     Cairo.FONT_WEIGHT_NORMAL);
-	set_font_size(cr, size / 25.0);
+	set_font_size(cr, px / 25.0);
 	function calcxy(i)
-		x = state[(i-1)*2+1]*size
-		y = state[(i-1)*2+2]*size
+		x = state[(i-1)*2+1]*px
+		y = state[(i-1)*2+2]*px
 		x,y
 	end
 	reds =   [1,  0, 0, .7, 0, .7, .2, .7]
@@ -285,10 +314,20 @@ function render(fn, obj::EulerObject, state::EulerState; size=500.0)
 		set_source_rgba(cr, reds[i], greens[i], blues[i], .3)
 		(x, y) = calcxy(i)
 		if obj.specs[i].shape == :circle
-			arc(cr, x, y, obj.sizes[i]*size, 0, 2*pi)
+			arc(cr, x, y, obj.sizes[i]*px, 0, 2*pi)
 		elseif obj.specs[i].shape == :square
-			halfside = obj.sizes[i] * size
+			halfside = obj.sizes[i] * px
 			rectangle(cr, x - halfside, y - halfside, 2halfside, 2halfside)
+		elseif obj.specs[i].shape == :triangle
+			# convert into our triangle notation
+			r = obj.sizes[i]
+			h = cos(pi/6) * r # half the side of the triangle
+			j = sin(pi/6) * r # distance from center to side 
+			# start at lower-left, then top, then lower-right, then close
+			move_to(cr, x-h*px, y+j*px)
+			line_to(cr, x, y-r*px)
+			line_to(cr, x+h*px, y+j*px)
+			close_path(cr)
 		end
 		fill(cr)
 	end
@@ -298,11 +337,21 @@ function render(fn, obj::EulerObject, state::EulerState; size=500.0)
 		# TODO: it should be possible to extract the below into a fn...
 		(x, y) = calcxy(i)
 		if obj.specs[i].shape == :circle
-			move_to(cr, x+obj.sizes[i]*size, y)
-			arc(cr, x, y, obj.sizes[i]*size, 0, 2*pi)
+			move_to(cr, x+obj.sizes[i]*px, y)
+			arc(cr, x, y, obj.sizes[i]*px, 0, 2*pi)
 		elseif obj.specs[i].shape == :square
-			halfside = obj.sizes[i] * size
+			halfside = obj.sizes[i] * px
 			rectangle(cr, x - halfside, y - halfside, 2halfside, 2halfside)
+		elseif obj.specs[i].shape == :triangle
+			# convert into our triangle notation
+			r = obj.sizes[i]
+			h = cos(pi/6) * r # half the side of the triangle
+			j = sin(pi/6) * r # distance from center to side 
+			# start at lower-left, then top, then lower-right, then close
+			move_to(cr, x-h*px, y+j*px)
+			line_to(cr, x, y-r*px)
+			line_to(cr, x+h*px, y+j*px)
+			close_path(cr)
 		end
 		stroke(cr);
 
