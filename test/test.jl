@@ -63,6 +63,8 @@ bmtr1 = VennEuler.make_bitmap([.5, .5], .15, spec_tr, 20)
 #@show bmtr1 #sum(bmsq1) == 81
 VennEuler.showbitmap(bmtr1)
 
+#TODO spec_rect = EulerSpec(:rectangle, [NaN, NaN, NaN], [0, 0, 0])
+
 # evaluating Euler states
 simplelabels = ["A", "B"]
 simpledata = bool([1 0; 1 1; 0 1])
@@ -81,6 +83,12 @@ eo = make_euler_object(setlabels, randdata, [spec, spec_tr, spec_sq], sizesum=.5
 (minf,minx,ret) = optimize(eo, random_state(eo), ftol=1/10000)
 println("got $minf at $minx (returned $ret)")
 #@test ret == :FTOL_REACHED
+
+spec_fixed = EulerSpec(:circle, [0.5, 0.5], [0, 0])
+eo = make_euler_object(setlabels, randdata, [spec_fixed, spec_tr, spec_sq], sizesum=.5)
+(minf,minx,ret) = optimize(eo, random_state(eo), ftol=1/10000)
+println("got $minf at $minx (returned $ret)")
+@test isequal(minx[1:2], spec_fixed.clamp)
 
 # output
 render("test1.svg", eo, minx, verbose=1)

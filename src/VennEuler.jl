@@ -137,9 +137,11 @@ function make_euler_object(labels, counts, specs::Vector{EulerSpec}; sizesum = 1
 	# then, use those sizes to generate bounds
 
 	# this forces the centers to not overlap with the boundary
-	lb = dupeelements(shape_sizes)
-	ub = dupeelements(1 .- shape_sizes)
-	@assert all(lb .< ub)
+	# and inserts any non-NaN specs into the 
+	clamp_vec = [[sp.clamp for sp in specs]...]
+	lb = ifelse(isnan(clamp_vec), dupeelements(shape_sizes), clamp_vec)
+	ub = ifelse(isnan(clamp_vec), dupeelements(1 .- shape_sizes), clamp_vec)
+	@assert all(lb .<= ub)
 
 	# return: state vector, state object (with bounds, closure, etc)
 	eo = EulerObject(nparams, labels, lb, ub, shape_sizes, target, specs, identity)
