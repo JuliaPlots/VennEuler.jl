@@ -183,6 +183,7 @@ function eval_euler_state(obj::EulerObject, state::EulerState; verbose::Int64=0,
 	# draws different shapes depending on spec
 	bitmaps = [make_bitmap(state[obj.specs[i].statepos], obj.sizes[i], obj.specs[i], px) 
 				for i in 1:length(obj.labels)]
+	not_bitmaps = [!bm for bm in bitmaps]
 
 	# iterate through the powerset index
 	# ignore 000
@@ -196,7 +197,7 @@ function eval_euler_state(obj::EulerObject, state::EulerState; verbose::Int64=0,
 		# if we have 101, then take the overlap of bitmaps[1], !bitmaps[2], and bitmaps[3]
 		overlap = trues(px,px) 
 		for i in 1:length(compare_str)
-			overlap = overlap & (compare_str[i] == '1' ? bitmaps[i] : !bitmaps[i])
+			overlap = overlap & (compare_str[i] == '1' ? bitmaps[i] : not_bitmaps[i])
 		end
 		if (verbose > 0) showbitmap(overlap) end
 		overlaps[psi] = sum(overlap)
