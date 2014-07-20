@@ -58,6 +58,8 @@ function make_bitmap(params, size, spec, px)
 		make_bitmap_square(params[1], params[2], size, px)
 	elseif spec.shape == :triangle
 		make_bitmap_triangle(params[1], params[2], size, px)
+	elseif spec.shape == :rectangle
+		make_bitmap_rectangle(params[1], params[2], params[3], size, px)
 	else
 		error("unknown shape: ", spec.shape)
 	end
@@ -88,15 +90,28 @@ function make_bitmap_triangle(x, y, r, px) # r = radius of circle around the tri
 	bm
 end
 
-function make_bitmap_square(x, y, halfsz, px)
+function make_bitmap_rectangle(x, y, ecc, halfsz, px)
 	bm = falses(px, px) # DRY...
 	pixel = 1/px
 
+	hw = 4 ^ (ecc - 0.5) # height/width scaling (sqrt of ratio)
 	# compute column and row ranges, then fast assignment
-	xrange_bm = iround(max(1, (x - halfsz) * px + 1)) : iround(min(px, (x + halfsz) * px + 1))
-	yrange_bm = iround(max(1, (y - halfsz) * px + 1)) : iround(min(px, (y + halfsz) * px + 1))
+	xrange_bm = iround(max(1, (x - halfsz/hw) * px + 1)) : iround(min(px, (x + halfsz/hw) * px + 1))
+	yrange_bm = iround(max(1, (y - halfsz*hw) * px + 1)) : iround(min(px, (y + halfsz*hw) * px + 1))
 	bm[yrange_bm, xrange_bm] = true # matrices are indexed Y,X...
 	bm
+end
+
+function make_bitmap_square(x, y, halfsz, px)
+	make_bitmap_rectangle(x, y, .5, halfsz, px)
+	# bm = falses(px, px) # DRY...
+	# pixel = 1/px
+
+	# # compute column and row ranges, then fast assignment
+	# xrange_bm = iround(max(1, (x - halfsz) * px + 1)) : iround(min(px, (x + halfsz) * px + 1))
+	# yrange_bm = iround(max(1, (y - halfsz) * px + 1)) : iround(min(px, (y + halfsz) * px + 1))
+	# bm[yrange_bm, xrange_bm] = true # matrices are indexed Y,X...
+	# bm
 end
 
 function make_bitmap_circle(x, y, r, px)

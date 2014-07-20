@@ -51,9 +51,12 @@ type EulerSpec
 
 	function EulerSpec(shape, clamp, statepos)
 		# this constructor enforces invariants
-		if (in(shape, [:circle, :square, :triangle]))
+		if in(shape, [:circle, :square, :triangle])
 			@assert length(clamp) == 2
 			@assert length(statepos) == 2
+		elseif in(shape, [:rectangle])
+			@assert length(clamp) == 3
+			@assert length(statepos) == 3
 		else 
 			error("Unknown EulerSpec shape: ", string(shape))
 		end
@@ -65,6 +68,8 @@ EulerSpec() = EulerSpec(:circle)
 function EulerSpec(shape)
 	if in(shape, [:circle, :square, :triangle])
 		EulerSpec(shape, [NaN, NaN], [0, 0])
+	elseif in(shape, [:rectangle])
+		EulerSpec(shape, [NaN, NaN, NaN], [0, 0, 0])
 	else
 		error("Unknown EulerSpec shape: ", string(shape))
 	end

@@ -11,25 +11,48 @@ function update_statepos!(specs::Vector{EulerSpec})
 	end
 end
 
+# given count_totals, which is unscaled sizes, compute a size which 
+# depends on the shape type, along with bounding box info.
+# lb/ub for x/y params are half the maximum extent
+# lb/ub for other parameters are usually [0,1]
 function compute_shape_sizes(specs, count_totals, sizesum)
 	@assert length(specs) == length(count_totals)
 	shape_sizes = similar(count_totals, Float64)
+	bounding_boxes = Float64[] #similar(count_totals, Float64)
+
+	# rescale count_totals (areas) to sum to sizesum
+	areas = sizesum * count_totals / sum(count_totals)
+
 	for i in 1:length(specs)
 		if specs[i].shape == :circle
 			# area = pi r^2; r = sqrt(area/pi)
-			shape_sizes[i] = sqrt(count_totals[i] / pi) 
+			shape_sizes[i] = sqrt(areas[i] / pi)
+			append!(bounding_boxes, [shape_sizes[i], shape_sizes[i]])
 		elseif specs[i].shape == :square
 			# area = side^2; halfside = sqrt(area) / 2
-			shape_sizes[i] = sqrt(count_totals[i]) / 2
+			shape_sizes[i] = sqrt(areas[i]) / 2
+			append!(bounding_boxes, [shape_sizes[i], shape_sizes[i]])
 		elseif specs[i].shape == :triangle
-			# area = side^2 * sqrt(3)/4; dist to vertex = side/2 / cos(pi/6)
-			side = sqrt(4 * count_totals[i] / sqrt(3))
-			shape_sizes[i] = side / (2 * cos(pi/6))
+			# area = side^2 * sqrt(3)/4; dist to vertex (bounding circle radius) = side/2 / cos(pi/6)
+			side = sqrt(4 * areas[i] / sqrt(3))
+			shape_sizes[i] = side / (2cos(pi/6))
+			append!(bounding_boxes, [shape_sizes[i], shape_sizes[i]]) # I think side/2 is right, but get errors?
+		elseif specs[i].shape == :rectangle
+			# for rectangles, one of the parameters is the eccentricity, which
+			# varies from 0 to 1. This maps to a height/width ratio that varies
+			# from 1:4 to 4:1 (capped so that boundaries can be drawn). The
+			# conversion formula is hw = 16 ^ (ecc - 0.5). 
+			# From there, height = sqrt(area) * hw
+			# and width = sqrt(area) / hw. This means that shape_size for a 
+			# rectangle is sqrt(area)/2.
+			shape_sizes[i] = sqrt(areas[i])/2
+			append!(bounding_boxes, [2shape_sizes[i], 2shape_sizes[i], 0])
+				# to give room depending on ecc; no need to bound eccentricity
 		else
 			error("unknown shape: ", specs[i].shape)
 		end
 	end
-	sizesum * shape_sizes / sum(shape_sizes)
+	shape_sizes, bounding_boxes
 end
 
 function make_euler_object(labels, counts, specs::Vector{EulerSpec}; sizesum = 1)
@@ -45,14 +68,16 @@ function make_euler_object(labels, counts, specs::Vector{EulerSpec}; sizesum = 1
 	
 	# we have non-normalized areas, but need to compute a per-shape size (e.g., radius) 
 	# that indicates the maximum distance from the object center to the farthest edge
-	shape_sizes = compute_shape_sizes(specs, count_totals, sizesum)
+	shape_sizes, bounding_boxes = compute_shape_sizes(specs, count_totals, sizesum)
 	# then, use those sizes to generate bounds
 
 	# this forces the centers to not overlap with the boundary
-	# and inserts any non-NaN specs into the 
+	# and inserts any non-NaN clamps into the vector
 	clamp_vec = [[sp.clamp for sp in specs]...]
-	lb = ifelse(isnan(clamp_vec), dupeelements(shape_sizes), clamp_vec)
-	ub = ifelse(isnan(clamp_vec), dupeelements(1 .- shape_sizes), clamp_vec)
+	#@show clamp_vec
+	#@show shape_sizes
+	lb = ifelse(isnan(clamp_vec), bounding_boxes, clamp_vec)
+	ub = ifelse(isnan(clamp_vec), 1 .- bounding_boxes, clamp_vec)
 	@assert all(lb .<= ub)
 
 	# return: state vector, state object (with bounds, closure, etc)

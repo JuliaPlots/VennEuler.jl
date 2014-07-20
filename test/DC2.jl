@@ -20,3 +20,13 @@ eo = make_euler_object(labels, data, [EulerSpec(:circle), EulerSpec(:square, [.5
 println("got $minf at $minx (returned $ret)")
 
 render("test/DC2-mixed.svg", eo, minx)
+
+# do it again, but with rectangles (DSDC fixed)
+eo = make_euler_object(labels, data, [EulerSpec(:rectangle), EulerSpec(:rectangle, [.5, .5, .4], [0, 0, 0]), 
+	EulerSpec(:rectangle),
+	EulerSpec(:rectangle), EulerSpec(:rectangle), EulerSpec(:rectangle)])
+
+(minf,minx,ret) = optimize(eo, random_state(eo), ftol=-1, xtol=0.0025, maxtime=240, pop=1000)
+println("got $minf at $minx (returned $ret)")
+
+render("test/DC2-rects.svg", eo, minx)

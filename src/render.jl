@@ -9,6 +9,11 @@ function setup_shape!(cr, spec, state, size, px)
 		x,y = get_params(state, spec)
 		move_to(cr, x*px+size*px, y*px)
 		arc(cr, x*px, y*px, size*px, 0, 2*pi)
+	elseif spec.shape == :rectangle
+		x,y,ecc = get_params(state, spec)
+		halfside = size
+		hw = 4 ^ (ecc - 0.5)
+		rectangle(cr, (x - halfside/hw)*px, (y - halfside*hw)*px, 2halfside*px/hw, 2halfside*px*hw)
 	elseif spec.shape == :square
 		x,y = get_params(state, spec)
 		halfside = size
