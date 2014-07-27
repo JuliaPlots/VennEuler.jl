@@ -99,6 +99,9 @@ eo = make_euler_object(setlabels, randdata, [spec_fixed, spec_tr, spec_rect], si
 println("got $minf at $minx (returned $ret)")
 @test isequal(minx[1:2], spec_fixed.clamp)
 
+(minf,minx,ret) = optimize_iteratively(eo, random_state(eo), ftol=1/10000, verbose=true)
+println("got $minf at $minx (returned $ret)")
+
 # output
 render("test1.svg", eo, minx, verbose=1)
 

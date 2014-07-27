@@ -1,3 +1,31 @@
+function optimize_iteratively(obj::EulerObject, state::EulerState; xtol=1/200, ftol=1.0e-7, maxtime=30, init_step=.1,
+	alg = :GN_CRS2_LM, pop = 0, verbose = false)
+	
+	order = sortperm(eo.sizes, rev=true)
+
+	# foreach object, in order
+	orig_lb = copy(obj.lb)
+	orig_ub = copy(obj.ub)
+	minf = 0.0; minx = []; ret = 0.0;
+	for obj_idx in order
+		if (verbose) println("optimizing #$(obj_idx)") end
+		# lock every other objects' bounds to the current value
+		obj′ = deepcopy(obj)
+		obj′.lb = copy(state); obj′.ub = copy(state)
+		thisrange = obj.specs[obj_idx].statepos
+		if (verbose) println("preserving range: $thisrange") end
+		obj′.lb[thisrange] = orig_lb[thisrange]
+		obj′.ub[thisrange] = orig_ub[thisrange]
+		if (verbose) println("lb = $(obj′.lb)\nub = $(obj′.ub)") end
+		# optimize
+		(minf,minx,ret) = optimize(obj′, state, xtol=xtol, ftol=ftol, maxtime=maxtime, 
+			init_step=init_step, alg=alg, pop=pop)
+		println("got $minf at $minx (returned $ret)")
+		state = minx
+	end
+	minf, state, ret
+end
+
 function optimize(obj::EulerObject, state::EulerState; xtol=1/200, ftol=1.0e-7, maxtime=30, init_step=.1,
 	alg = :GN_CRS2_LM, pop = 0)
 	opt = Opt(alg, length(state))
@@ -34,8 +62,9 @@ function eval_euler_state(obj::EulerObject, state::EulerState; verbose::Int64=0,
 		end
 		# if we have 101, then take the overlap of bitmaps[1], !bitmaps[2], and bitmaps[3]
 		overlap = trues(px,px) 
-		for i in 1:length(compare_str)
-			overlap = overlap & (compare_str[i] == '1' ? bitmaps[i] : not_bitmaps[i])
+		for bm in 1:length(compare_str)
+			# TODO: create and!(a,b) that's like bitarray:956, but in-place, for speed
+			overlap = overlap & (compare_str[bm] == '1' ? bitmaps[bm] : not_bitmaps[bm])
 		end
 		if (verbose > 0) showbitmap(overlap) end
 		overlaps[psi] = sum(overlap)
@@ -132,7 +161,7 @@ function make_bitmap_circle(x, y, r, px)
 			xrange_bm = iround(max(1,(x - alpha) * px + 1)) : iround(min(px,(x + alpha) * px + 1))
 			#@show xrange_bm
 			if (length(xrange_bm) > 0)
-				bm[yoffset_bm, xrange_bm] = true
+				@inbounds bm[yoffset_bm, xrange_bm] = true
 			end
 		end
 	end
