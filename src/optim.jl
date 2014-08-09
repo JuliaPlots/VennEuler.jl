@@ -1,7 +1,7 @@
 function optimize_iteratively(obj::EulerObject, state::EulerState; xtol=1/200, ftol=1.0e-7, maxtime=30, init_step=.1,
 	alg = :GN_CRS2_LM, pop = 0, verbose = false)
 	
-	order = sortperm(eo.sizes, rev=true)
+	order = sortperm(obj.sizes, rev=true)
 
 	# foreach object, in order
 	orig_lb = copy(obj.lb)

@@ -11,6 +11,7 @@ export
 	EulerSpec,
 	make_euler_object,
 	optimize,
+	optimize_iteratively,
 	render,
 	random_state
 
