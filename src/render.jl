@@ -34,7 +34,18 @@ function setup_shape!(cr, spec, state, size, px)
 end
 
 function render(fn, obj::EulerObject, state::EulerState; verbose=0, px=500.0)
-	c = CairoSVGSurface(fn, px, px);
+	if isa(fn, AbstractString)
+		bn,ext = splitext(fn)
+		if ext == ".svg"
+			c = CairoSVGSurface(fn, px, px);
+		elseif ext ==".pdf"
+			c = CairoPDFSurface(fn, px, px);
+		else
+			throw(ArgumentError("Unable to render to output with extension $(ext)"))
+		end
+	else
+		c = CairoSVGSurface(fn, px, px);
+	end
 	cr = CairoContext(c);
 	set_line_width(cr, px / 200.0);
 	select_font_face(cr, "Sans", Cairo.FONT_SLANT_NORMAL,
