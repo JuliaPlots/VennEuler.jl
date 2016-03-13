@@ -91,7 +91,7 @@ function make_euler_object(labels, counts, specs::Vector{EulerSpec}; sizesum = 1
 	eo
 end
 make_euler_object(labels, counts, spec::EulerSpec; q...) = 
-	make_euler_object(labels, counts, [deepcopy(x)::EulerSpec for x in repeated(spec, length(labels))]; q...)
+	make_euler_object(labels, counts, EulerSpec[deepcopy(spec)::EulerSpec for x in 1:length(labels)]; q...)
 
 function random_state(eo::EulerObject)
 	rand(eo.nparams) .* (eo.ub .- eo.lb) .+ eo.lb
