@@ -112,8 +112,8 @@ function make_bitmap_triangle(x, y, r, px) # r = radius of circle around the tri
 		yoffset = (j - (r+j) * p/h, j) # congruent triangles give ratio of vertical offset from j
 
 		# covert into bitmap coords
-		xoffset_bm =  iround((x + xoffset) * px + 1)
-		yrange_bm = iround(max(1, (y + yoffset[1]) * px + 1)) : iround(min(px, (y + yoffset[2]) * px + 1))
+		xoffset_bm =  round(Integer, (x + xoffset) * px + 1)
+		yrange_bm = round(Integer, max(1, (y + yoffset[1]) * px + 1)) : round(Integer, min(px, (y + yoffset[2]) * px + 1))
 		bm[yrange_bm, xoffset_bm] = true
 	end
 	bm
@@ -125,8 +125,8 @@ function make_bitmap_rectangle(x, y, ecc, halfsz, px)
 
 	hw = 4 ^ (ecc - 0.5) # height/width scaling (sqrt of ratio)
 	# compute column and row ranges, then fast assignment
-	xrange_bm = iround(max(1, (x - halfsz/hw) * px + 1)) : iround(min(px, (x + halfsz/hw) * px + 1))
-	yrange_bm = iround(max(1, (y - halfsz*hw) * px + 1)) : iround(min(px, (y + halfsz*hw) * px + 1))
+	xrange_bm = round(Integer, max(1, (x - halfsz/hw) * px + 1)) : round(Integer, min(px, (x + halfsz/hw) * px + 1))
+	yrange_bm = round(Integer, max(1, (y - halfsz*hw) * px + 1)) : round(Integer, min(px, (y + halfsz*hw) * px + 1))
 	bm[yrange_bm, xrange_bm] = true # matrices are indexed Y,X...
 	bm
 end
@@ -137,8 +137,8 @@ function make_bitmap_square(x, y, halfsz, px)
 	# pixel = 1/px
 
 	# # compute column and row ranges, then fast assignment
-	# xrange_bm = iround(max(1, (x - halfsz) * px + 1)) : iround(min(px, (x + halfsz) * px + 1))
-	# yrange_bm = iround(max(1, (y - halfsz) * px + 1)) : iround(min(px, (y + halfsz) * px + 1))
+	# xrange_bm = round(Integer, max(1, (x - halfsz) * px + 1)) : round(Integer, min(px, (x + halfsz) * px + 1))
+	# yrange_bm = round(Integer, max(1, (y - halfsz) * px + 1)) : round(Integer, min(px, (y + halfsz) * px + 1))
 	# bm[yrange_bm, xrange_bm] = true # matrices are indexed Y,X...
 	# bm
 end
@@ -154,11 +154,11 @@ function make_bitmap_circle(x, y, r, px)
 		alpha = r * sqrt(1 - (yoffset/r)^2) # a big of trig
 		#@show alpha
 		# convert into bitmap coordinates
-		yoffset_bm = iround((y + yoffset) * px + 1)
+		yoffset_bm = round(Integer, (y + yoffset) * px + 1)
 		#@show yoffset_bm
 		if 1 <= yoffset_bm <= px 	# if Y is inside the box
 			# convert X into bitmap coordinates, bounding
-			xrange_bm = iround(max(1,(x - alpha) * px + 1)) : iround(min(px,(x + alpha) * px + 1))
+			xrange_bm = round(Integer, max(1,(x - alpha) * px + 1)) : round(Integer, min(px,(x + alpha) * px + 1))
 			#@show xrange_bm
 			if (length(xrange_bm) > 0)
 				@inbounds bm[yoffset_bm, xrange_bm] = true

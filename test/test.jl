@@ -11,7 +11,7 @@ srand(2)
 # data is a boolean matrix of N rows/observations, with M columns/sets,
 # and any number of set memberships for each observation (although often one
 # or more in practice). 
-randdata = randbool(20, 3) # 3 cols
+randdata = bitrand(20, 3) # 3 cols
 setlabels = ["A", "B", "C"]
 # specification is either a single object (if all sets are treated the same)
 # or a list of objects (to treat them differently)
@@ -20,7 +20,7 @@ specdefault = EulerSpec()
 @test isequal(spec.shape, specdefault.shape)
 @test isequal(spec.clamp, specdefault.clamp)
 @test_throws ErrorException EulerSpec(:tesseract)
-@test_throws ErrorException EulerSpec(:circle, [1, 1, 1], [0, 0, 0])
+@test_throws AssertionError EulerSpec(:circle, [1, 1, 1], [0, 0, 0])
 
 spec2 = EulerSpec(:circle, [.5, NaN], [0, 0])
 specs1 = [deepcopy(spec), deepcopy(spec), spec2]
@@ -29,15 +29,15 @@ VennEuler.update_statepos!(specs1)
 @test isequal(specs1[2].statepos, [3, 4])
 
 ss, bb = VennEuler.compute_shape_sizes(specs1, vec(sum(randdata,1)), .5)
-@test_approx_eq_eps(ss, [0.244301,0.263876,0.172747], .001)
+@test_approx_eq_eps(ss, [0.265962,0.171677,0.242789], .001)
 
 # make sure DisjointSets can be constructed
 ds1 = VennEuler.DisjointSet(randdata, setlabels)
-@test ds1.counts == [0,0,5,3,5,1,4,2]
+@test ds1.counts == [2,3,2,1,4,6,2,0]
 
 # make an Euler object
 eo = make_euler_object(setlabels, randdata, spec, sizesum=.5) # test shortcut
-@test_approx_eq_eps(eo.lb, [0.244301, 0.244301, 0.263876, 0.263876, 0.172747, 0.172747], .001)
+@test_approx_eq_eps(eo.lb, [0.265962, 0.265962, 0.171677, 0.171677, 0.242789, 0.242789], .001)
 es = random_state(eo)
 @test all(eo.lb .<= es .<= eo.ub)
 

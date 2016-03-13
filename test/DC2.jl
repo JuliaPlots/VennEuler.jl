@@ -1,7 +1,7 @@
 using VennEuler
 
 data, labels = readcsv("test/DC2.csv", header=true)
-data = bool(data)
+data = map(Bool, data)
 labels = vec(labels)
 
 eo = make_euler_object(labels, data, EulerSpec()) # circles, for now
