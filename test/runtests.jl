@@ -29,7 +29,7 @@ VennEuler.update_statepos!(specs1)
 @test isequal(specs1[2].statepos, [3, 4])
 
 ss, bb = VennEuler.compute_shape_sizes(specs1, vec(sum(randdata,1)), .5)
-@test_approx_eq_eps(ss, [0.265962,0.171677,0.242789], .001)
+@test ss ≈ [0.265962,0.171677,0.242789] atol=.001
 
 # make sure DisjointSets can be constructed
 ds1 = VennEuler.DisjointSet(randdata, setlabels)
@@ -37,7 +37,7 @@ ds1 = VennEuler.DisjointSet(randdata, setlabels)
 
 # make an Euler object
 eo = make_euler_object(setlabels, randdata, spec, sizesum=.5) # test shortcut
-@test_approx_eq_eps(eo.lb, [0.265962, 0.265962, 0.171677, 0.171677, 0.242789, 0.242789], .001)
+@test eo.lb ≈ [0.265962, 0.265962, 0.171677, 0.171677, 0.242789, 0.242789] atol=.001
 es = random_state(eo)
 @test all(eo.lb .<= es .<= eo.ub)
 
@@ -75,7 +75,7 @@ println("")
 
 # evaluating Euler states
 simplelabels = ["A", "B"]
-simpledata = bool([1 0; 1 1; 0 1])
+simpledata = Bool[1 0; 1 1; 0 1]
 
 eo2 = make_euler_object(simplelabels, simpledata, spec, sizesum=.5)
 @show VennEuler.eval_euler_state(eo2, [.33, .5, .66, .5])

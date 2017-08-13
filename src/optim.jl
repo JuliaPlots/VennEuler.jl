@@ -1,5 +1,5 @@
 function optimize_iteratively(obj::EulerObject, state::EulerState; xtol=1/200, ftol=1.0e-7, maxtime=30, init_step=.1,
-	alg = :GN_CRS2_LM, pop = 0, verbose = false)
+	alg = :GN_ORIG_DIRECT, pop = 0, verbose = false)
 	
 	order = sortperm(obj.sizes, rev=true)
 
@@ -27,7 +27,7 @@ function optimize_iteratively(obj::EulerObject, state::EulerState; xtol=1/200, f
 end
 
 function optimize(obj::EulerObject, state::EulerState; xtol=1/200, ftol=1.0e-7, maxtime=30, init_step=.1,
-	alg = :GN_CRS2_LM, pop = 0)
+	alg = :GN_ORIG_DIRECT, pop = 0)
 	opt = Opt(alg, length(state))
 	lower_bounds!(opt, obj.lb)
 	upper_bounds!(opt, obj.ub)
@@ -49,7 +49,7 @@ function eval_euler_state(obj::EulerObject, state::EulerState; verbose::Int64=0,
 	# draws different shapes depending on spec
 	bitmaps = [make_bitmap(state[obj.specs[i].statepos], obj.sizes[i], obj.specs[i], px) 
 				for i in 1:length(obj.labels)]
-	not_bitmaps = [!bm for bm in bitmaps]
+	not_bitmaps = map(bm->.!bm, bitmaps)
 
 	# iterate through the powerset index
 	# ignore 000
@@ -64,7 +64,7 @@ function eval_euler_state(obj::EulerObject, state::EulerState; verbose::Int64=0,
 		overlap = trues(px,px) 
 		for bm in 1:length(compare_str)
 			# TODO: create and!(a,b) that's like bitarray:956, but in-place, for speed
-			overlap = overlap & (compare_str[bm] == '1' ? bitmaps[bm] : not_bitmaps[bm])
+			overlap = overlap .& (compare_str[bm] == '1' ? bitmaps[bm] : not_bitmaps[bm])
 		end
 		if (verbose > 0) showbitmap(overlap) end
 		overlaps[psi] = sum(overlap)
