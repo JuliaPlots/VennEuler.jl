@@ -73,11 +73,11 @@ function make_euler_object(labels, counts, specs::Vector{EulerSpec}; sizesum = 1
 
 	# this forces the centers to not overlap with the boundary
 	# and inserts any non-NaN clamps into the vector
-	clamp_vec = [[sp.clamp for sp in specs]...]
+	clamp_vec = vcat([sp.clamp for sp in specs]...)
 	#@show clamp_vec
 	#@show shape_sizes
-	lb = ifelse(isnan(clamp_vec), bounding_boxes, clamp_vec)
-	ub = ifelse(isnan(clamp_vec), 1 .- bounding_boxes, clamp_vec)
+	lb = ifelse.(isnan.(clamp_vec), bounding_boxes, clamp_vec)
+	ub = ifelse.(isnan.(clamp_vec), 1 .- bounding_boxes, clamp_vec)
 	@assert all(lb .<= ub)
 
 	# return: state vector, state object (with bounds, closure, etc)
@@ -93,7 +93,4 @@ end
 make_euler_object(labels, counts, spec::EulerSpec; q...) = 
 	make_euler_object(labels, counts, EulerSpec[deepcopy(spec)::EulerSpec for x in 1:length(labels)]; q...)
 
-function random_state(eo::EulerObject)
-	rand(eo.nparams) .* (eo.ub .- eo.lb) .+ eo.lb
-end
-
+random_state(eo::EulerObject) = rand(eo.nparams) .* (eo.ub .- eo.lb) .+ eo.lb

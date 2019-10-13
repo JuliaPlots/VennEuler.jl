@@ -3,7 +3,7 @@
 # fall into each element of the power set of the given sets. Note that a PowerSet
 # would be similar, but (for example) the slot for A would contain A&B, whereas for
 # a DisjointSet, the slot for A is for observations of (A and not-B and not-C), etc.
-type DisjointSet
+mutable struct DisjointSet
 	labels
 	counts
 
@@ -31,9 +31,9 @@ type DisjointSet
 end
 
 # an EulerState is just a Vector{Float64}
-typealias EulerState Vector{Float64}
+const EulerState = Vector{Float64}
 
-type EulerObject
+mutable struct EulerObject
 	nparams
 	labels
 	lb
@@ -44,7 +44,7 @@ type EulerObject
 	evalfn
 end
 
-type EulerSpec
+mutable struct EulerSpec
 	shape
 	clamp
 	statepos
