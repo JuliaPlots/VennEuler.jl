@@ -57,7 +57,7 @@ end
 
 function make_euler_object(labels, counts, specs::Vector{EulerSpec}; sizesum = 1)
 	target = DisjointSet(counts, labels)
-	count_totals = vec(sum(counts,1))
+	count_totals = vec(sum(counts, dims=1))
 
 	@assert length(labels) == length(count_totals)
 

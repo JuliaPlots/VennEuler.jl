@@ -1,17 +1,36 @@
-using VennEuler, Base.Test
+using VennEuler, Test, Random
 
 # just use @test macro
 # run with:
 # reload("src/VennEuler.jl"); include("test/test.jl")
-
-srand(2)
 
 # set up an initial test of 3 circles with random set membership
 
 # data is a boolean matrix of N rows/observations, with M columns/sets,
 # and any number of set memberships for each observation (although often one
 # or more in practice). 
-randdata = bitrand(20, 3) # 3 cols
+randdata = [
+  true   true  false
+  true  false   true
+  true  false  false
+  true  false  false
+  true  false  false
+ false  false   true
+  true  false   true
+  true  false   true
+ false  false   true
+  true  false   true
+ false  false  false
+ false   true  false
+ false  false  false
+  true  false  false
+  true  false   true
+ false  false   true
+ false   true   true
+ false   true  false
+  true  false   true
+  true   true  false ]
+
 setlabels = ["A", "B", "C"]
 # specification is either a single object (if all sets are treated the same)
 # or a list of objects (to treat them differently)
@@ -28,7 +47,7 @@ VennEuler.update_statepos!(specs1)
 @test isequal(specs1[1].statepos, [1, 2])
 @test isequal(specs1[2].statepos, [3, 4])
 
-ss, bb = VennEuler.compute_shape_sizes(specs1, vec(sum(randdata,1)), .5)
+ss, bb = VennEuler.compute_shape_sizes(specs1, vec(sum(randdata, dims=1)), .5)
 @test ss ≈ [0.265962,0.171677,0.242789] atol=.001
 
 # make sure DisjointSets can be constructed
@@ -104,5 +123,3 @@ println("got $minf at $minx (returned $ret)")
 
 # output
 render("test1.svg", eo, minx, verbose=1)
-
-
