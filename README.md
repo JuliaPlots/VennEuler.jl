@@ -1,3 +1,12 @@
+[![][travis-img]][travis-url] [![][codecov-img]][codecov-url] [![][slack-img]][slack-url]
+
+[travis-img]: http://img.shields.io/travis/com/JuliaPlots/VennEuler.jl.svg
+[travis-url]: https://travis-ci.com/JuliaPlots/VennEuler.jl
+[codecov-img]: https://codecov.io/gh/JuliaPlots/VennEuler.jl/branch/master/graph/badge.svg
+[codecov-url]: https://codecov.io/gh/JuliaPlots/VennEuler.jl
+[slack-img]: https://img.shields.io/badge/chat-on%20slack-yellow.svg
+[slack-url]: https://julialang.slack.com
+
 VennEuler.jl
 ============
 
