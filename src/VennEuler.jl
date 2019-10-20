@@ -1,7 +1,7 @@
 module VennEuler
 
 using Base
-using Iterators
+using IterTools
 using NLopt
 using Cairo
 

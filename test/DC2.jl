@@ -1,8 +1,8 @@
-using VennEuler
+using VennEuler, DelimitedFiles
 
-data, labels = readcsv("test/DC2.csv", header=true)
-data = map(Bool, data)
-labels = vec(labels)
+data = readdlm("test/DC2.csv", ',')
+labels = data[1,:]
+data = map(Bool, data[2:end,:])
 
 eo = make_euler_object(labels, data, EulerSpec()) # circles, for now
 

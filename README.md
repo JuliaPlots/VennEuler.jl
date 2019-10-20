@@ -48,7 +48,7 @@ How To Use It
 
 Dependencies:
 
-* Iterators.jl -- handy!
+* IterTools.jl -- handy!
 * NLopt.jl -- the global optimization library (I don't love it, but it seems to work)
 * Cairo -- graphics, for output
 

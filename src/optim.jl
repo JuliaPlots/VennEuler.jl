@@ -55,8 +55,8 @@ function eval_euler_state(obj::EulerObject, state::EulerState; verbose::Int64=0,
 	# ignore 000
 	overlaps = zeros(2^length(obj.labels)-1)
 	for psi = 1:length(overlaps)
-		bpsi = bits(psi)
-		compare_str = bpsi[(endof(bpsi) - length(obj.labels) + 1):end]
+		bpsi = bitstring(psi)
+		compare_str = bpsi[(lastindex(bpsi) - length(obj.labels) + 1):end]
 		if (verbose > 0)
 			@show compare_str
 		end
@@ -114,7 +114,7 @@ function make_bitmap_triangle(x, y, r, px) # r = radius of circle around the tri
 		# covert into bitmap coords
 		xoffset_bm =  round(Integer, (x + xoffset) * px + 1)
 		yrange_bm = round(Integer, max(1, (y + yoffset[1]) * px + 1)) : round(Integer, min(px, (y + yoffset[2]) * px + 1))
-		bm[yrange_bm, xoffset_bm] = true
+		bm[yrange_bm, xoffset_bm] .= true
 	end
 	bm
 end
@@ -127,7 +127,7 @@ function make_bitmap_rectangle(x, y, ecc, halfsz, px)
 	# compute column and row ranges, then fast assignment
 	xrange_bm = round(Integer, max(1, (x - halfsz/hw) * px + 1)) : round(Integer, min(px, (x + halfsz/hw) * px + 1))
 	yrange_bm = round(Integer, max(1, (y - halfsz*hw) * px + 1)) : round(Integer, min(px, (y + halfsz*hw) * px + 1))
-	bm[yrange_bm, xrange_bm] = true # matrices are indexed Y,X...
+	bm[yrange_bm, xrange_bm] .= true # matrices are indexed Y,X...
 	bm
 end
 
@@ -139,7 +139,7 @@ function make_bitmap_square(x, y, halfsz, px)
 	# # compute column and row ranges, then fast assignment
 	# xrange_bm = round(Integer, max(1, (x - halfsz) * px + 1)) : round(Integer, min(px, (x + halfsz) * px + 1))
 	# yrange_bm = round(Integer, max(1, (y - halfsz) * px + 1)) : round(Integer, min(px, (y + halfsz) * px + 1))
-	# bm[yrange_bm, xrange_bm] = true # matrices are indexed Y,X...
+	# bm[yrange_bm, xrange_bm] .= true # matrices are indexed Y,X...
 	# bm
 end
 
@@ -161,7 +161,7 @@ function make_bitmap_circle(x, y, r, px)
 			xrange_bm = round(Integer, max(1,(x - alpha) * px + 1)) : round(Integer, min(px,(x + alpha) * px + 1))
 			#@show xrange_bm
 			if (length(xrange_bm) > 0)
-				@inbounds bm[yoffset_bm, xrange_bm] = true
+				@inbounds bm[yoffset_bm, xrange_bm] .= true
 			end
 		end
 	end
