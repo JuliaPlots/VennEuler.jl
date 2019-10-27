@@ -1,4 +1,3 @@
-
 # a DisjointSet is a structure that stores counts of the number of observations that
 # fall into each element of the power set of the given sets. Note that a PowerSet
 # would be similar, but (for example) the slot for A would contain A&B, whereas for

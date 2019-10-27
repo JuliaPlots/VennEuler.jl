@@ -55,6 +55,15 @@ function compute_shape_sizes(specs, count_totals, sizesum)
 	shape_sizes, bounding_boxes
 end
 
+"""
+    make_euler_object(labels, counts, specs; sizesum=1) -> EulerObject
+
+Configure an `EulerObject` with the data to plot and the desired style.  For N
+classes, `labels` is a vector of length N specifying their names; `counts` is a
+boolean matrix with N columns for which each row is an observation; and `specs`
+is an `EulerSpec` or N-vector thereof with the shape.  The keyword argument
+`sizenum` controls the areas of the shapes.
+"""
 function make_euler_object(labels, counts, specs::Vector{EulerSpec}; sizesum = 1)
 	target = DisjointSet(counts, labels)
 	count_totals = vec(sum(counts, dims=1))
@@ -93,4 +102,9 @@ end
 make_euler_object(labels, counts, spec::EulerSpec; q...) = 
 	make_euler_object(labels, counts, EulerSpec[deepcopy(spec)::EulerSpec for x in 1:length(labels)]; q...)
 
+"""
+    random_state(eo::EulerObject)
+
+Pick random parameters within the upper and lower bounds of each `EulerSpec` in `eo`.
+"""
 random_state(eo::EulerObject) = rand(eo.nparams) .* (eo.ub .- eo.lb) .+ eo.lb

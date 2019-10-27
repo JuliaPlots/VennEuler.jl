@@ -55,17 +55,38 @@ The results can be rendered as an SVG file.
 How To Use It
 =============
 
-Dependencies:
+```
+(v1.2) pkg> add VennEuler
 
-* IterTools.jl -- handy!
-* NLopt.jl -- the global optimization library (I don't love it, but it seems to work)
-* Cairo -- graphics, for output
+julia> using VennEuler
 
-See the `test/test.jl` and `test/DC2.jl` scripts for examples. The latter shows (as of Spring 2014)
-the overlap in membership of six [Data Community DC](http://datacommunitydc.org) Meetup groups.
+julia> data = Bool[
+ 0  1  0
+ 1  1  0
+ 0  0  1
+ 0  1  0
+ 0  1  0
+ 0  1  1
+ 0  0  1
+ 1  0  1
+ 1  1  0
+ 1  0  1
+];
+
+julia> eo = make_euler_object(["a","b","c"], data, EulerSpec(:circle), sizesum=0.5)
+EulerObject(6, ["a", "b", "c"], [0.2060129077457011, 0.2060129077457011, 0.252313252202016, 0.252313252202016, 0.23032943298089031, 0.23032943298089031], [0.7939870922542989, 0.7939870922542989, 0.747686747797984, 0.747686747797984, 0.7696705670191097, 0.7696705670191097], [0.2060129077457011, 0.252313252202016, 0.23032943298089031], VennEuler.DisjointSet(["a", "b", "c"], [0, 2, 3, 1, 0, 2, 2, 0]), EulerSpec[EulerSpec(:circle, [NaN, NaN], [1, 2]), EulerSpec(:circle, [NaN, NaN], [3, 4]), EulerSpec(:circle, [NaN, NaN], [5, 6])], getfield(VennEuler, Symbol("##6#9")){EulerObject}(EulerObject(#= circular reference @-2 =#)))
+
+julia> loss, state, result = optimize(eo, random_state(eo))
+(0.024647421240312717, [0.5307496857847521, 0.3158423607955026, 0.747686747797984, 0.2905651018373946, 0.3429581864192766, 0.33534561404792806], :XTOL_REACHED)
+
+julia> render("three-circles.svg", eo, state)
+```
+
+![readme-example-image](/docs/three-circles.svg)
+
+For more examples see the unit tests.
 
 How To Make It Better
 =====================
 
 Pull requests welcome! See the [issues list](https://github.com/HarlanH/VennEuler.jl/issues?state=open)!
-

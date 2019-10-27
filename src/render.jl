@@ -33,6 +33,11 @@ function setup_shape!(cr, spec, state, size, px)
 	x,y
 end
 
+"""
+    render(fn, obj::EulerObject, state::EulerState; verbose=0, px=500.0)
+
+Draw `obj` to file `fn` using `state`.  `fn` should end in ".svg" or ".pdf".
+"""
 function render(fn, obj::EulerObject, state::EulerState; verbose=0, px=500.0)
 	if isa(fn, AbstractString)
 		bn,ext = splitext(fn)
