@@ -1,5 +1,5 @@
-*.svg
+test/*.svg
 
-*.csv
+test/*.csv
 
-/.DS_Store
+*/.DS_Store

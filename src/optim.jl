@@ -1,5 +1,5 @@
 function optimize_iteratively(obj::EulerObject, state::EulerState; xtol=1/200, ftol=1.0e-7, maxtime=30, init_step=.1,
-	alg = :GN_ORIG_DIRECT, pop = 0, verbose = false)
+	alg = :GN_CRS2_LM, pop = 0, verbose = false)
 	
 	order = sortperm(obj.sizes, rev=true)
 
@@ -26,8 +26,18 @@ function optimize_iteratively(obj::EulerObject, state::EulerState; xtol=1/200, f
 	minf, state, ret
 end
 
+"""
+    optimize(obj::EulerObject, state::EulerState;
+             xtol=1/200, ftol=1.0e-7, maxtime=30, init_step=.1, alg=:GN_CRS2_LM, pop=0) ->
+             loss, state, result
+
+Iteratively adjust `obj`'s parameters, starting from `state`, to minimize the
+difference in the areas of the shapes therein and the data they represent.
+Returned are this difference, the final state, and reason the iterations were
+stopped, respectively.
+"""
 function optimize(obj::EulerObject, state::EulerState; xtol=1/200, ftol=1.0e-7, maxtime=30, init_step=.1,
-	alg = :GN_ORIG_DIRECT, pop = 0)
+	alg = :GN_CRS2_LM, pop = 0)
 	opt = Opt(alg, length(state))
 	lower_bounds!(opt, obj.lb)
 	upper_bounds!(opt, obj.ub)
@@ -176,4 +186,3 @@ function showbitmap(bm)
 		println("")
 	end
 end
-
